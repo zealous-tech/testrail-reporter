@@ -1,18 +1,25 @@
-# testrail-reporter
+[![Version](https://img.shields.io/badge/version-1.0.0-green)](https://semver.org)
+[![Licence](https://img.shields.io/badge/Licence-MIT-green)](https://github.com/zealous-tech/testrail-reporter/blob/main/LICENSE)
+[![Node](https://img.shields.io/badge/node->=10.0.0-coral)](https://github.com/zealous-tech/testrail-reporter/blob/main/package.json)
+[![TestRail API](https://img.shields.io/badge/TestRail%20API-v2-teal)](https://support.testrail.com/hc/en-us)
 
-[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://semver.org)
+# TestRail Reporter for all popular JS | TS based testing frameworks
 
 
-TestRail Reporter is a package that allows you to easily generate reports for your tests using Vitest and integrate them with TestRail, a popular test management system. With this package, you can streamline your testing process by automatically synchronizing your test results with TestRail, providing valuable insights and analytics for your test executions.
+**The TestRail reporter package currently supports [Vitest](https://vitest.dev/) test framework only. The support for [Jest](https://jestjs.io/), [Playwright](https://playwright.dev/), etc is currently in the development process.**
+
+The package allows you to synchronize auto test results with associated [TestRail](https://www.testrail.com/) tests through simple configuration.
 
 ## Features
 
 The reporter supports the following features
 
-- Create a test run in TestRail, including all test cases from the mentioned suite or including only those cases that you selected to run.
-- Update the test results in TestRail either after running all test cases or after at specified time intervals.
-- The reporter offers the functionality to either generate a new test run in TestRail or update the existing one. You have an option to update the test results of the same test run which executed several times during a day, by saving all history data. Or you can create a new test run for every execution during the same day.
-- If a test case fails, you can observe an error message in the comment field.
+- supports Vitest testing framework
+- associate Vitest tests with TestRail tests
+- create a test run in TestRail by specified test cases or all test cases. Or reporter can link and use existing test run (manually created from TestRail GUI)
+- update the test run results in TestRail either after running all test cases or simultaneously
+- you have an option to update the test results of the same test run which executed several times during a day, by saving all history data. Or you can create a new test run for every execution during the same day
+- if a test case fails, you can observe an error message in the comment field of the TestRail test result
 
 ## Installation
 
@@ -22,20 +29,20 @@ To install testrail-reporter, use the following command:
  npm install @zealteam/testrail-reporter
 ```
 
-## Usage
+## Usage - Vitest
 
-To generate a report with Vitest and upload it to TestRail, follow these steps:
+To generate a report with [Vitest](https://vitest.dev/) and upload it to [TestRail](https://www.testrail.com/), follow these steps:
 
-1. Configure Vitest by adding the TestRail reporter as a reporter in your Vitest config file. Open your Vitest config file (e.g., `vitest.config.ts`) and add the following line to the `reporters` array:
+1. Configure Vitest by adding the TestRail reporter as a reporter in your Vitest config file. Open your Vitest config file (e.g., `vitest.config.ts`) and add `'@zealteam/testrail-reporter'` into the `reporters` array. See below
 
 ```typescript
 teardownTimeout: 200000,
-reporters: ['default', 'testrail-reporter'],
+reporters: ['default', '@zealteam/testrail-reporter'],
 ```
 
 Note: It is advisable to include the `teardownTimeout` in any of these configurations since the reporter may run after the tests have completed, and setting it to a large number is recommended.
 
-You must include the default runner or your tests won't run properly.
+**You must include the `default` runner or your tests won't run properly.**
 
 2. Create a `testrail.config.ts` file in your project's root directory. Enter the following credentials in the file:
 
@@ -51,9 +58,9 @@ module.exports = {
     id: 0,
   },
   create_new_run: {
-    single_run_per_day: true,
     include_all: false,
-    run_name: "Test Run"
+    run_name: "Test Run",
+    milestone_id: 0
   },
   status: {
     pass: 1,
@@ -62,63 +69,64 @@ module.exports = {
   }
 };
 ```
+
 - **`base_url`**
 
-  - Replace "https://example.testrail.io" with the actual base URL of your TestRail instance.
+    - Replace "https://example.testrail.io" with the actual base URL of your TestRail instance.
 
 - **`user`**
 
-  - Replace "username" with the actual username of your TestRail account.
+    - Replace "username" with the actual username of your TestRail account.
 
 - **`pass`**
 
-  - Replace "password" with the actual password of your TestRail account.
+    - Replace "password" with the actual password of your TestRail account.
+
+- **`project_id and suite_id`**
+
+    - Replace the values of project_id's and suite_id's with the corresponding values specific to your project..
+
+- **`testRailUpdateInterval`** - Default is `0` (seconds).
+
+    - When set to 0, the test results will be updated in TestRail after all tests have been executed.
+    - If set to another value (e.g., 10), the test results will be updated in TestRail every 10 seconds.
+    - If set to a value greater than 59, it will be rounded to minutes, and the results will be updated in TestRail every specified minute.
 
 - **`use_existing_run`**
 
-  - **`id`** - Default is `0`.
+    - **`id`** - Default is `0`.
 
-    - You have the option to supply an existing test run `id` from your TestRail. When an `id` is provided, your results will be stored in the designated test run, and the reporter will ignore the configurations within the `create_new_run` settings.
+        - You have the option to supply an existing test run `id` from your TestRail. When an `id` is provided, your results will be stored in the designated test run, and the reporter will ignore the configurations within the `create_new_run` settings. The same test run will be updated on subsequent runs, and historical data will be maintained within that run.
 
 NOTE: The configs under `create_new_run` will be used if `id` is `0`.
 
 - **`create_new_run`**
 
-  - **`run_name`**
+    - **`run_name`**
 
-    - If you want to create a new run in TestRail, you must provide a value for `run_name`. The run name will be composed of the following combination: `Run name 'current date'` (e.g., `This is the new run 22.1.2024`).
+        - If you want to create a new run in TestRail, you can provide a value for `run_name` or the reporter will use the default `Test Run` value. The run name will be composed of the following combination: `'<run_name> <current_date>` (e.g., `Test Run 22.1.2024`).
 
-  - **`single_run_per_day`** - Default is `true`.
+    - **`include_all`** Default is `false`
 
-    - If set to `true`, one test run should be created per day. The same test run will be updated on subsequent runs for the same day, and historical data will be maintained within that run.
-    - If set to `false`, a new test run will be created each time the tests are being executed.
+        - When set to false, the newly created TestRail's test run will only include the test cases that are scheduled to execute from Vitest.
+        - When set to true, the the newly created TestRail's test run will include all test cases within the specified test suite from TestRail.
+    
+    - **`milestone_id`** Default is `0`
 
-  - **`include_all`** Default is `false`
-
-    - When set to false, the test run will only include the test cases that are scheduled to execution.
-    - When set to true, the test run will encompass all test cases within the specified test suite, regardless of their scheduled status.
-
-NOTE: If `single_run_per_day` is `true` and you've already created a run in TestRail, but the `run_name` doesn't match the provided name, the reporter will create a new test run in TestRail. To use an existing run, provide the run `id`, or set `single_run_per_day` to `true` and ensure the `run_name` matches the existing run name in TestRail.
-
-- **`project_id and suite_id`**
-
-  - Replace the values of project_id's and suite_id's with the corresponding values specific to your project..
-
-- **`testRailUpdateInterval`** - Default is `0` (seconds).
-
-  - When set to 0, the test results will be updated in TestRail after all tests have been executed.
-  - If set to another value (e.g., 10), the test results will be updated in TestRail every 10 seconds.
-  - If set to a value greater than 59, it will be rounded to minutes, and the results will be updated in TestRail every specified minute.
+        - If you have a milestone in your TestRail, you can set the `milestone_id`. The configuration will be ignored if the value is 0.
 
 - **`status`**
 
-  - The `status` configuration in the provided module is a set of status mappings used to interpret and communicate the test results to TestRail. You should configure your case statuses from TestRail(Administration > Customizations > RESULT STATUSES) and set to provided configuration
-  ```typescript
+    - The `status` configuration in the provided module is a set of status mappings used to interpret and communicate the test results to TestRail. You should configure your case statuses from TestRail(Administration > Customizations > RESULT STATUSES) and set to provided configuration
+  
+```typescript
   status: {
     pass: 1,
     fail: 5,
     skipped: 6
-  }```
+  }
+```
+
 3. Write your tests using Vitest, ensuring that each test has appropriate assertions and result statuses. You can include the TestRail test IDs in the test names or descriptions. For example:
 
 ```typescript
@@ -136,3 +144,7 @@ In the example above, _`@C123`_ represents the TestRail test ID. Replace _`C123`
 ## TestRail Configuration
 
 You should Enable API and Enable session authentication for API from testrail settings(It can be enabled in the administration area in TestRail under Administration > Site Settings > API.)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/zealous-tech/testrail-reporter/blob/main/LICENSE) file for details.

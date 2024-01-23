@@ -10,7 +10,6 @@ module.exports = {
     id: 0,
   },
   create_new_run: {
-    single_run_per_day: true,
     include_all: false,
     run_name: "Test Run",
     milestone_id: 0

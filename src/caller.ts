@@ -72,7 +72,7 @@ class Caller {
 
 
     onInit() {
-        console.log('The Run Started!', new Date());
+        console.log("The reporter started successfully!")
     }
 
     onPathsCollected(paths) {
@@ -83,7 +83,16 @@ class Caller {
         files_count++
         this.processStartList(file);
         if (files_count == paths_count) {
-            this.createRun()
+            if (use_existing_run.id != 0) {
+                runId = use_existing_run.id
+                console.log(`The Run started, utilizing an existing run in TestRail with the ID=${runId}.`);
+            } else {
+                this.addRunToTestRail()
+                    .then(({ id }) => {
+                        runId = id;
+                    })
+                    .catch((err) => console.log(error(err)));
+            }
             if (testRailUpdateInterval != 0) this.startScheduler()
         }
     }
@@ -209,42 +218,6 @@ class Caller {
                         startList[element.id] = +case_id[1];
                     }
                 }
-            }
-        }
-    }
-
-    createRun() {
-        if (use_existing_run.id != 0) {
-            runId = use_existing_run.id
-        } else {
-            if (create_new_run.single_run_per_day) {
-                this.tr_api
-                    .getRuns(project_id, { suite_id })
-                    .then((results) => {
-                        const today = new Date();
-                        run = results.find(
-                            (runs_el) =>
-                                runs_el.name ==
-                                `${create_new_run.run_name} ${today.getDate()}.${today.getMonth() + 1
-                                }.${today.getFullYear()}`
-                        );
-                    })
-                    .then(() => {
-                        if (!run) {
-                            this.addRunToTestRail().then(({ id }) => {
-                                runId = id;
-                            });
-                        } else {
-                            runId = run.id;
-                        }
-                    })
-                    .catch((err) => console.log(error(err)));
-            } else {
-                this.addRunToTestRail()
-                    .then(({ id }) => {
-                        runId = id;
-                    })
-                    .catch((err) => console.log(error(err)));
             }
         }
     }
