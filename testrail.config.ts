@@ -6,6 +6,7 @@ module.exports = {
   project_id: 1,
   suite_id: 1,
   testRailUpdateInterval: 10,
+  updateResultAfterEachCase: false,
   use_existing_run: {
     id: 0,
   },
@@ -15,8 +16,9 @@ module.exports = {
     milestone_id: 0
   },
   status: {
-    pass: 1,
-    fail: 5,
+    passed: 1,
+    failed: 5,
+    untested: 3,
     pending: 4,
     skipped: 6,
     expFail: 7,
