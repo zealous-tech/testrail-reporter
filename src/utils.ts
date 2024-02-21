@@ -1,4 +1,4 @@
-const regex = /@C([?\d]{1,6})/;
+const regex = /@C([?\d]{1,9})/;
 
 class Utils {
   _formatTime(ms: number) {

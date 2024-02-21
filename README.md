@@ -2,47 +2,67 @@
 [![Licence](https://img.shields.io/badge/Licence-MIT-green)](https://github.com/zealous-tech/testrail-reporter/blob/main/LICENSE)
 [![Node](https://img.shields.io/badge/node->=10.0.0-coral)](https://github.com/zealous-tech/testrail-reporter/blob/main/package.json)
 [![TestRail API](https://img.shields.io/badge/TestRail%20API-v2-teal)](https://support.testrail.com/hc/en-us)
+[![Vitest](https://img.shields.io/badge/Vitest-1.2.2-darkgreen)](https://vitest.dev/)
+[![Playwright](https://img.shields.io/badge/Playwright-1.41.2-blue)](https://playwright.dev/)
+[![Typescript](https://img.shields.io/badge/Typescript-5.3.3-lightblue)](https://www.typescriptlang.org/)
+
 
 # TestRail Reporter for all popular JS | TS based testing frameworks
 
 
-**The TestRail reporter package currently supports [Vitest](https://vitest.dev/) test framework only. The support for [Jest](https://jestjs.io/), [Playwright](https://playwright.dev/), etc is currently in the development process.**
+**The TestRail reporter package currently supports [Vitest](https://vitest.dev/), [Playwright](https://playwright.dev/) test frameworks. The support for [Jest](https://jestjs.io/) and other runners currently in the development process.**
 
 The package allows you to synchronize auto test results with associated [TestRail](https://www.testrail.com/) tests through simple configuration.
+
+
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [TestRail Configuration](#testrail-configuration)
+- [License](#license)
+
 
 ## Features
 
 The reporter supports the following features
 
-- supports Vitest testing framework
-- associate Vitest tests with TestRail tests
-- create a test run in TestRail by specified test cases or all test cases. Or reporter can link and use existing test run (manually created from TestRail GUI)
-- update the test run results in TestRail either after running all test cases or simultaneously
-- you have an option to update the test results of the same test run which executed several times during a day, by saving all history data. Or you can create a new test run for every execution during the same day
-- if a test case fails, you can observe an error message in the comment field of the TestRail test result
+- Supports Vitest, Playwright testing frameworks.
+- Associate Vitest, Playwright tests with TestRail tests.
+- Generate a run in TestRail using specified test cases or all available test cases. Alternatively, the reporter can connect to and utilize an already created test run (manually initiated through the TestRail graphical user interface).
+- Update the test run results in TestRail either after running all test cases or simultaneously.
+- You have an option to update the test results of the same test run which executed several times, by saving all history data. Or you can create a new test run for every execution.
+- If a test case fails, you can observe an error message in the comment field of the TestRail test result.
 
 ## Installation
 
-To install testrail-reporter, use the following command:
+To install [testrail-reporter](https://www.npmjs.com/package/@zealteam/testrail-reporter?activeTab=readme), use the following command:
 
 ```code
  npm install @zealteam/testrail-reporter
 ```
 
-## Usage - Vitest
+## Usage
 
-To generate a report with [Vitest](https://vitest.dev/) and upload it to [TestRail](https://www.testrail.com/), follow these steps:
+To generate a report with [Vitest](https://vitest.dev/) or [Playwright](https://playwright.dev/) and upload it to [TestRail](https://www.testrail.com/), follow these steps:
 
-1. Configure Vitest by adding the TestRail reporter as a reporter in your Vitest config file. Open your Vitest config file (e.g., `vitest.config.ts`) and add `'@zealteam/testrail-reporter'` into the `reporters` array. See below
+1. Add reporter to the config file
+    - Vitest: Configure Vitest by adding the TestRail reporter as a reporter in your Vitest config file. Open your Vitest config file (e.g., `vitest.config.ts`) and add `'@zealteam/testrail-reporter'` into the `reporters` array. See below
 
-```typescript
-teardownTimeout: 200000,
-reporters: ['default', '@zealteam/testrail-reporter'],
-```
+    ```typescript
+    teardownTimeout: 200000,
+    reporters: ['default', '@zealteam/testrail-reporter'],
+    ```
 
-Note: It is advisable to include the `teardownTimeout` in any of these configurations since the reporter may run after the tests have completed, and setting it to a large number is recommended.
+    Note: It is advisable to include the `teardownTimeout` in any of these configurations since the reporter may run after the tests have completed, and setting it to a large number is recommended.
 
-**You must include the `default` runner or your tests won't run properly.**
+    **You must include the `default` runner or your tests won't run properly.**
+    - Playwright: Configure Playwright by adding the TestRail reporter as a reporter in your Playwright config file. Open your Playwright config file (e.g., `playwright.config.ts`) and add `'@zealteam/testrail-reporter'` into the `reporters` array. See below
+
+    ```typescript
+    reporter: [['list'], ['@zealteam/testrail-reporter']],
+    ```
 
 2. Create a `testrail.config.ts` file in your project's root directory. Enter the following credentials in the file:
 
@@ -54,6 +74,7 @@ module.exports = {
   project_id: 1,
   suite_id: 1,
   testRailUpdateInterval: 0,
+  updateResultAfterEachCase: true,
   use_existing_run: {
     id: 0,
   },
@@ -63,8 +84,9 @@ module.exports = {
     milestone_id: 0
   },
   status: {
-    pass: 1,
-    fail: 5,
+    passed: 1,
+    failed: 5,
+    untested: 3,
     skipped: 6
   }
 };
@@ -92,6 +114,11 @@ module.exports = {
     - If set to another value (e.g., 10), the test results will be updated in TestRail every 10 seconds.
     - If set to a value greater than 59, it will be rounded to minutes, and the results will be updated in TestRail every specified minute.
 
+- **`updateResultAfterEachCase`** - Default is `true`.  Please note that this configuration is only compatible with Playwright.
+
+    - If set to `true` the test results will be updated in TestRail after each test have been executed and `testRailUpdateInterval` config will be ignored.
+    - If set to `false` the test results will be updated in TestRail based on the `testRailUpdateInterval` value. 
+
 - **`use_existing_run`**
 
     - **`id`** - Default is `0`.
@@ -106,10 +133,10 @@ NOTE: The configs under `create_new_run` will be used if `id` is `0`.
 
         - If you want to create a new run in TestRail, you can provide a value for `run_name` or the reporter will use the default `Test Run` value. The run name will be composed of the following combination: `'<run_name> <current_date>` (e.g., `Test Run 22.1.2024`).
 
-    - **`include_all`** Default is `false`
+    - **`include_all`** - Default is `false`
 
         - When set to false, the newly created TestRail's test run will only include the test cases that are scheduled to execute from Vitest.
-        - When set to true, the the newly created TestRail's test run will include all test cases within the specified test suite from TestRail.
+        - When set to true, the newly created TestRail's test run will include all test cases within the specified test suite from TestRail.
     
     - **`milestone_id`** Default is `0`
 
@@ -121,13 +148,14 @@ NOTE: The configs under `create_new_run` will be used if `id` is `0`.
   
 ```typescript
   status: {
-    pass: 1,
-    fail: 5,
+    passed: 1,
+    failed: 5,
+    untested: 3,
     skipped: 6
   }
 ```
 
-3. Write your tests using Vitest, ensuring that each test has appropriate assertions and result statuses. You can include the TestRail test IDs in the test names or descriptions. For example:
+3. Write your tests using Vitest and Playwright, ensuring that each test has appropriate assertions and result statuses. You can include the TestRail test IDs in the test names or descriptions. For example:
 
 ```typescript
 it('Should perform a specific task @C123', async () => {
@@ -137,9 +165,13 @@ it('Should perform a specific task @C123', async () => {
 
 In the example above, _`@C123`_ represents the TestRail test ID. Replace _`C123`_ with the actual test ID from TestRail.
 
-4. Run your tests with Vitest as you normally would. The TestRail reporter will collect the test results.
+4. Run your tests with Vitest and Playwright as you normally would. The TestRail reporter will collect the test results.
 
 5. After running your tests, the TestRail reporter will automatically upload the test results to your TestRail project based on the provided configuration.
+
+Here is a quick GIF demonstrating how to configure your project.
+
+![alt text](static/images/reporter_installation_and_configuration.gif)
 
 ## TestRail Configuration
 
@@ -148,3 +180,6 @@ You should Enable API and Enable session authentication for API from testrail se
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](https://github.com/zealous-tech/testrail-reporter/blob/main/LICENSE) file for details.
+
+
+NOTE: Ensure that within your project, the `node_modules`, configuration file, and the `tests` folder are located at the same level.
