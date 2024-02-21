@@ -14,7 +14,7 @@ class CallerVitest extends BaseClass {
     readonly utils = new Utils();
 
     onInit() {
-        console.log("The reporter started successfully!")
+        console.log('TestRail Reporter Log: ' + "The reporter started successfully!")
     }
 
     onPathsCollected(paths) {
@@ -28,15 +28,15 @@ class CallerVitest extends BaseClass {
             if (this.tesrailConfigs.use_existing_run.id != 0) {
                 global.runId = this.tesrailConfigs.use_existing_run.id
                 await this.tr_api.getRun(global.runId).then(() => {
-                    console.log("The runId is a valid test run id!!")
+                    console.log('TestRail Reporter Log: ' + "The runId is a valid test run id!!")
                 })
-                console.log(`The Run started, utilizing an existing run in TestRail with the ID=${global.runId}.`);
+                console.log('TestRail Reporter Log: ' + 'TestRail Reporter Log: ' + `The Run started, utilizing an existing run in TestRail with the ID=${global.runId}.`);
             } else {
                 await this.addRunToTestRail(case_ids)
                     .then(({ id }) => {
                         global.runId = id;
                     })
-                    .catch((err) => console.log(error(err)));
+                    .catch((err) => console.log('TestRail Reporter Log: ' + error(err)));
             }
             if (this.tesrailConfigs.testRailUpdateInterval != 0) this.startScheduler(global.runId)
         }
@@ -81,7 +81,7 @@ class CallerVitest extends BaseClass {
             await this.updateTestRailResults(testResults, global.runId)
         }
         global.need_to_stop = true;
-        console.log(
+        console.log('TestRail Reporter Log: ' +
             "See Results: " +
             blue(underline(`${this.tesrailConfigs.base_url}/index.php?/runs/view/${global.runId}\n`))
         );

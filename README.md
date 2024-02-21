@@ -28,12 +28,12 @@ The package allows you to synchronize auto test results with associated [TestRai
 
 The reporter supports the following features
 
-- supports Vitest, Playwright testing frameworks
-- associate Vitest, Playwright tests with TestRail tests
-- create a test run in TestRail by specified test cases or all test cases. Or reporter can link and use existing test run (manually created from TestRail GUI)
-- update the test run results in TestRail either after running all test cases or simultaneously
-- you have an option to update the test results of the same test run which executed several times during a day, by saving all history data. Or you can create a new test run for every execution during the same day
-- if a test case fails, you can observe an error message in the comment field of the TestRail test result
+- Supports Vitest, Playwright testing frameworks.
+- Associate Vitest, Playwright tests with TestRail tests.
+- Generate a run in TestRail using specified test cases or all available test cases. Alternatively, the reporter can connect to and utilize an already created test run (manually initiated through the TestRail graphical user interface).
+- Update the test run results in TestRail either after running all test cases or simultaneously.
+- You have an option to update the test results of the same test run which executed several times, by saving all history data. Or you can create a new test run for every execution.
+- If a test case fails, you can observe an error message in the comment field of the TestRail test result.
 
 ## Installation
 
@@ -171,7 +171,7 @@ In the example above, _`@C123`_ represents the TestRail test ID. Replace _`C123`
 
 Here is a quick GIF demonstrating how to configure your project.
 
-![alt text](reporter_installation_and_configuration.gif)
+![alt text](static/images/reporter_installation_and_configuration.gif)
 
 ## TestRail Configuration
 

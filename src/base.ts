@@ -5,17 +5,11 @@ import { IResult, ITestrailConfig } from "../lib/interface.ts";
 import * as schedule from 'node-schedule';
 
 const DEFAULT_CONFIG_FILENAME = 'testrail.config.ts';
-
-
-
-
 let config: ITestrailConfig;
 export const testResults: IResult[] = [];
 export const case_ids: number[] = [];
-export const runCaseIds: number[] = [];
 export const copiedTestResults: IResult[] = [];
 const expectedFailures = {} as { [x: number]: boolean };
-
 
 async function getConfig() {
     try {
@@ -26,7 +20,6 @@ async function getConfig() {
         throw Error("TEST RAILS config failing")
     }
 }
-
 
 if (process.env.npm_lifecycle_script?.includes('vitest')) {
     await (async () => {
@@ -54,9 +47,8 @@ export class BaseClass {
         ? `*/${this.tesrailConfigs.testRailUpdateInterval} * * * * *`
         : `*/${Math.round(this.tesrailConfigs.testRailUpdateInterval / 60)} * * * *`;
 
-
     addRunToTestRail = async (case_ids: any) => {
-        console.log(message("Adding new Run to Test Rail\n"));
+        console.log(message("TestRail Reporter Log: " + "Adding new Run to Test Rail\n"));
         const today = new Date();
         return await this.tr_api.addRun(this.tesrailConfigs.project_id, {
             suite_id: this.tesrailConfigs.suite_id,
@@ -70,7 +62,7 @@ export class BaseClass {
     };
 
     async updateTestRailResults(testRailResults: IResult[], runId: number) {
-        console.log(message("Start adding run results into TestRail\n"), new Date());
+        console.log(message("TestRail Reporter Log: " + "Start adding run results into TestRail\n"), new Date());
         let result: IResult[];
         await this.tr_api
             .getCases(this.tesrailConfigs.project_id, { suite_id: this.tesrailConfigs.suite_id })
@@ -105,22 +97,15 @@ export class BaseClass {
                         })
                     })
                 }
-                await this.tr_api.getTests(runId).then((res) => {
-                    res.forEach((item) => {
-                        runCaseIds.push(item.case_id)
-                    })
-                })
-                const filteredResult = result.filter(items => runCaseIds.includes(items.case_id));
-
                 const res = {
-                    "results": filteredResult
+                    "results": result
                 }
                 await this.tr_api.addResultsForCases(runId, res)
                     .then(() => {
-                        console.log('Test result added TestRail successfully!\n', new Date());
+                        console.log("TestRail Reporter Log: " + 'Test result added TestRail successfully!\n', new Date());
                     })
                     .catch((error) => {
-                        console.error('Failed to add test result:', error);
+                        console.log(error("TestRail Reporter Log: " + 'Failed to add test result:'), error);
                     });
 
             })
@@ -133,7 +118,6 @@ export class BaseClass {
             if (global.need_to_stop && job) {
                 job.cancel()
             }
-
         });
     }
 
