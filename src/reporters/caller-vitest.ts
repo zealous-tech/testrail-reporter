@@ -1,14 +1,14 @@
 import { blue, red as error, underline } from "colorette";
 import Utils from "../utils.js";
 import { setTimeout } from 'timers/promises';
-import { BaseClass, testResults, case_ids } from "../base.ts";
+import { BaseClass, testResults, case_ids } from "../base";
 
 
 const startList = {} as { [x: number]: number };
 global.need_to_stop = false;
 let files_count = 0
 let paths_count = 0
-global.runId = 0;
+let runId = 0;
 
 class CallerVitest extends BaseClass {
     readonly utils = new Utils();
@@ -17,32 +17,32 @@ class CallerVitest extends BaseClass {
         console.log('TestRail Reporter Log: ' + "The reporter started successfully!")
     }
 
-    onPathsCollected(paths) {
+    onPathsCollected(paths: string | any[]) {
         paths_count = paths.length
     }
 
-    async onCollected(file) {
+    async onCollected(file: any) {
         files_count++
         this.processStartList(file);
         if (files_count == paths_count) {
             if (this.tesrailConfigs.use_existing_run.id != 0) {
-                global.runId = this.tesrailConfigs.use_existing_run.id
-                await this.tr_api.getRun(global.runId).then(() => {
+                runId = this.tesrailConfigs.use_existing_run.id
+                await this.tr_api.getRun(runId).then(() => {
                     console.log('TestRail Reporter Log: ' + "The runId is a valid test run id!!")
                 })
-                console.log('TestRail Reporter Log: ' + 'TestRail Reporter Log: ' + `The Run started, utilizing an existing run in TestRail with the ID=${global.runId}.`);
+                console.log('TestRail Reporter Log: ' + 'TestRail Reporter Log: ' + `The Run started, utilizing an existing run in TestRail with the ID=${runId}.`);
             } else {
                 await this.addRunToTestRail(case_ids)
                     .then(({ id }) => {
-                        global.runId = id;
+                        runId = id;
                     })
                     .catch((err) => console.log('TestRail Reporter Log: ' + error(err)));
             }
-            if (this.tesrailConfigs.testRailUpdateInterval != 0) this.startScheduler(global.runId)
+            if (this.tesrailConfigs.testRailUpdateInterval != 0) this.startScheduler(runId)
         }
     }
 
-    onTaskUpdate(packs) {
+    onTaskUpdate(packs: any[]) {
         packs.forEach((element) => {
             const testRunId = element[0];
             const case_id = startList[testRunId];
@@ -73,21 +73,21 @@ class CallerVitest extends BaseClass {
 
     }
 
-    async onFinished(packs) {
+    async onFinished(packs: any) {
         if (this.tesrailConfigs.testRailUpdateInterval == 0) {
-            while (global.runId === 0) {
+            while (runId === 0) {
                 await setTimeout(100)
             }
-            await this.updateTestRailResults(testResults, global.runId)
+            await this.updateTestRailResults(testResults, runId)
         }
         global.need_to_stop = true;
         console.log('TestRail Reporter Log: ' +
             "See Results: " +
-            blue(underline(`${this.tesrailConfigs.base_url}/index.php?/runs/view/${global.runId}\n`))
+            blue(underline(`${this.tesrailConfigs.base_url}/index.php?/runs/view/${runId}\n`))
         );
     }
 
-    processStartList(arr) {
+    processStartList(arr: any) {
         for (const element of arr) {
             if (!element.name.match(/[@C][?\d]{1,8}$/gm) && element.tasks) {
                 this.processStartList(element.tasks);

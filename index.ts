@@ -1,5 +1,5 @@
-import CallerVitest from "./src/reporters/caller-vitest.ts";
-import CallerPlaywright from "./src/reporters/caller-playwright.ts";
+import CallerVitest from "./src/reporters/caller-vitest";
+import CallerPlaywright from "./src/reporters/caller-playwright";
 import type {
     FullConfig, FullResult, Suite, TestCase, TestResult
 } from '@playwright/test/reporter';
@@ -13,19 +13,19 @@ class VitestTestrailReporter {
         this.caller.onInit();
     }
 
-    onPathsCollected(paths) {
+    onPathsCollected(paths: any) {
         this.caller.onPathsCollected(paths);
     }
 
-    onCollected(file) {
+    onCollected(file: any) {
         this.caller.onCollected(file);
     }
 
-    onTaskUpdate(packs) {
+    onTaskUpdate(packs: any) {
         this.caller.onTaskUpdate(packs);
     }
 
-    onFinished(packs) {
+    onFinished(packs: any) {
         this.caller.onFinished(packs);
     }
 }
