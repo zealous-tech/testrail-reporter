@@ -1,7 +1,7 @@
 import TestRail from "@dlenroc/testrail";
 import path from "path";
 import { green as message, red as error } from "colorette";
-import { IResult, ITestrailConfig } from "../lib/interface.ts";
+import { IResult, ITestrailConfig } from "../lib/interface";
 import * as schedule from 'node-schedule';
 
 const DEFAULT_CONFIG_FILENAME = 'testrail.config.ts';
