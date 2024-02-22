@@ -3,7 +3,7 @@ import Utils from "../utils.js";
 import type {
     FullConfig, FullResult, Suite, TestCase, TestResult
 } from '@playwright/test/reporter';
-import { BaseClass, testResults, case_ids, copiedTestResults } from "../base.ts";
+import { BaseClass, testResults, case_ids, copiedTestResults } from "../base";
 import { setTimeout } from 'timers/promises';
 
 global.need_to_stop = false;
