@@ -4,7 +4,7 @@
 [![TestRail API](https://img.shields.io/badge/TestRail%20API-v2-teal)](https://support.testrail.com/hc/en-us)
 [![Vitest](https://img.shields.io/badge/Vitest-1.2.2-darkgreen)](https://vitest.dev/)
 [![Playwright](https://img.shields.io/badge/Playwright-1.41.2-blue)](https://playwright.dev/)
-[![Typescript](https://img.shields.io/badge/Typescript-5.3.3-lightblue)](https://www.typescriptlang.org/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-ES6-yellow)](https://www.javascript.com/)
 
 
 # TestRail Reporter for all popular JS | TS based testing frameworks
@@ -21,6 +21,7 @@ The package allows you to synchronize auto test results with associated [TestRai
 - [Installation](#installation)
 - [Usage](#usage)
 - [TestRail Configuration](#testrail-configuration)
+- [Workflow](#workflow)
 - [License](#license)
 
 
@@ -48,9 +49,9 @@ To install [testrail-reporter](https://www.npmjs.com/package/@zealteam/testrail-
 To generate a report with [Vitest](https://vitest.dev/) or [Playwright](https://playwright.dev/) and upload it to [TestRail](https://www.testrail.com/), follow these steps:
 
 1. Add reporter to the config file
-    - Vitest: Configure Vitest by adding the TestRail reporter as a reporter in your Vitest config file. Open your Vitest config file (e.g., `vitest.config.ts`) and add `'@zealteam/testrail-reporter'` into the `reporters` array. See below
+    - Vitest: Configure Vitest by adding the TestRail reporter as a reporter in your Vitest config file. Open your Vitest config file (e.g., `vitest.config.js`) and add `'@zealteam/testrail-reporter'` into the `reporters` array. See below
 
-    ```typescript
+    ```javascript
     teardownTimeout: 200000,
     reporters: ['default', '@zealteam/testrail-reporter'],
     ```
@@ -58,15 +59,15 @@ To generate a report with [Vitest](https://vitest.dev/) or [Playwright](https://
     Note: It is advisable to include the `teardownTimeout` in any of these configurations since the reporter may run after the tests have completed, and setting it to a large number is recommended.
 
     **You must include the `default` runner or your tests won't run properly.**
-    - Playwright: Configure Playwright by adding the TestRail reporter as a reporter in your Playwright config file. Open your Playwright config file (e.g., `playwright.config.ts`) and add `'@zealteam/testrail-reporter'` into the `reporters` array. See below
+    - Playwright: Configure Playwright by adding the TestRail reporter as a reporter in your Playwright config file. Open your Playwright config file (e.g., `playwright.config.js`) and add `'@zealteam/testrail-reporter'` into the `reporters` array. See below
 
-    ```typescript
+    ```javascript
     reporter: [['list'], ['@zealteam/testrail-reporter']],
     ```
 
-2. Create a `testrail.config.ts` file in your project's root directory. Enter the following credentials in the file:
+2. Create a `testrail.config.js` file in your project's root directory. Enter the following credentials in the file:
 
-```typescript
+```javascript
 module.exports = {
   base_url: "https://example.testrail.io",
   user: "username",
@@ -146,7 +147,7 @@ NOTE: The configs under `create_new_run` will be used if `id` is `0`.
 
     - The `status` configuration in the provided module is a set of status mappings used to interpret and communicate the test results to TestRail. You should configure your case statuses from TestRail(Administration > Customizations > RESULT STATUSES) and set to provided configuration
   
-```typescript
+```javascript
   status: {
     passed: 1,
     failed: 5,
@@ -157,7 +158,7 @@ NOTE: The configs under `create_new_run` will be used if `id` is `0`.
 
 3. Write your tests using Vitest and Playwright, ensuring that each test has appropriate assertions and result statuses. You can include the TestRail test IDs in the test names or descriptions. For example:
 
-```typescript
+```javascript
 it('Should perform a specific task @C123', async () => {
   // Test logic here
 });
@@ -176,6 +177,12 @@ Here is a quick GIF demonstrating how to configure your project.
 ## TestRail Configuration
 
 You should Enable API and Enable session authentication for API from testrail settings(It can be enabled in the administration area in TestRail under Administration > Site Settings > API.)
+
+## Workflow
+
+Here is a workflow of the reporter
+
+![alt text](static/images/workflow.png)
 
 ## License
 

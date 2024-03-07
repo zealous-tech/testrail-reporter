@@ -1,22 +1,23 @@
 {
   "name": "@zealteam/testrail-reporter",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A custom reporter for Vitest, Jest, and Playwright designed to synchronize with Testrail.",
   "author": "Davit Manukyan <davit_m@zealous.tech>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zealous-tech/testrail-reporter.git"
   },
-  "types": "./dist/index.d.ts",
   "engines": {
     "node": ">=10.0.0"
   },
-  "main": "./dist/index.js",
+  "main": "index.js",
   "files": [
-    "/dist"
+    "/src",
+    "/static",
+    "index.js",
+    "testrail.config.js"
   ],
   "scripts": {
-    "build": "npx tsc",
     "jest": "jest",
     "playwright": "playwright",
     "vitest": "vitest"
