@@ -15,9 +15,13 @@ let removedCaseIds = [];
 let existingCaseIds = [];
 let testrailRunCaseIds = [];
 let suiteCaseIds = [];
+let custom_step_results = [];
 let getCasesResponse;
 let createRunResponse;
 let getTestsResponse;
+let stepResult;
+let actual;
+let expected;
 
 class CallerPlaywright extends BaseClass {
     constructor() {
@@ -58,6 +62,7 @@ class CallerPlaywright extends BaseClass {
     }
 
     async onTestEnd(test, result) {
+        custom_step_results = [];
         while (testrailRunCaseIds.length == 0) {
             await setTimeout(300);
         }
@@ -73,6 +78,8 @@ class CallerPlaywright extends BaseClass {
                 defects: "",
                 version: "",
             };
+            this.stepResultComment(result)
+            if (custom_step_results.length > 0) data.custom_step_results = custom_step_results;
             if (!testrailRunCaseIds.includes(+case_id[1])) console.log(errorMessage('TestRail Reporter Log: ' + `Test case with id=${+case_id[1]} doen't exist in TestRail run with id=${runId}`));
             if (testrailRunCaseIds.includes(+case_id[1])) testResults.push(data);
             if (this.tesrailConfigs.updateResultAfterEachCase && testrailRunCaseIds.includes(+case_id[1])) await this.tr_api.addResultForCase(runId, +case_id[1], data).catch((err) => {
@@ -117,6 +124,33 @@ class CallerPlaywright extends BaseClass {
             this.tesrailConfigs.testRailUpdateInterval != 0 &&
             !this.tesrailConfigs.updateResultAfterEachCase) {
             await this.updateCurrentResults(runId);
+        }
+    }
+
+    stepResultComment(result) {
+        for (const step of result.steps) {
+            if (step.category === 'test.step') {
+                if (step.error != undefined) {
+                    let stepError = step.error.message.replace(/\u001b\[\d+m/g, '').split('\n')
+                    for (const err of stepError) {
+                        if (err.includes('Received')) { actual = err }
+                        if (err.includes('Expected')) { expected = err }
+                    }
+                    stepResult = {
+                        "content": step.title,
+                        "expected": expected,
+                        "actual": actual,
+                        "status_id": this.tesrailConfigs.status.failed
+                    }
+                } else {
+                    stepResult = {
+                        "content": step.title,
+                        "status_id": this.tesrailConfigs.status.passed
+                    }
+                }
+                custom_step_results.push(stepResult)
+                this.stepResultComment(step)
+            }
         }
     }
 }
