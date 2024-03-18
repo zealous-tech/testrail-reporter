@@ -190,3 +190,19 @@ This project is licensed under the MIT License - see the [LICENSE](https://githu
 
 
 NOTE: Ensure that within your project, the `node_modules`, configuration file, and the `tests` folder are located at the same level.
+
+Differences Between testrail-reporter and TestRail CLI (The TestRail CLI is a command-line interface tool developed by the TestRail team, allowing users to upload test automation results from any JUnit-style XML file to TestRail.)
+
+| Feature           | testrail-reporter | TestRail CLI |
+|-------------------|-------------------|--------------|
+| Simultaneously Result Updates          | Supported        | Not support       |
+| Selecting the Time Interval for Updating Results          | Supported        | Not support       |
+| Updating Results After Running All Test Cases           | Supported               | Supported   |
+| Storing Step Results     | Supported       | Supported  |
+| Adding  Comment to the Results     | Supported       | Supported  |
+| Creating New Run | Supported              | Supported       |
+| Updating Existing Run       | Supported              | Supported         |
+| Attaching Screenshots or Logs       | Support is Currently in Development             | Supported         |
+| Custom Status Support (xfail, fixed)       | Support is Currently in Development              | Not support         |
+| Adding New Case to Existing Test Run       | Support is Currently in Development              | Supported         |
+| Adding New Case to Test Suite       | Not support              | Supported         |
