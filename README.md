@@ -196,13 +196,13 @@ Differences Between testrail-reporter and TestRail CLI (The TestRail CLI is a co
 | Feature           | testrail-reporter | TestRail CLI |
 |-------------------|-------------------|--------------|
 | Simultaneously Result Updates          | Supported        | Not support       |
-| Selecting the Time Interval for Updating Results          | Supported        | Not support       |
+| Specify an Interval to Periodically Update Results          | Supported        | Not support       |
+| Custom Status Support (xfail, fixed)       | Support is Currently in Development              | Not support         |
 | Updating Results After Running All Test Cases           | Supported               | Supported   |
 | Storing Step Results     | Supported       | Supported  |
 | Adding  Comment to the Results     | Supported       | Supported  |
 | Creating New Run | Supported              | Supported       |
 | Updating Existing Run       | Supported              | Supported         |
 | Attaching Screenshots or Logs       | Support is Currently in Development             | Supported         |
-| Custom Status Support (xfail, fixed)       | Support is Currently in Development              | Not support         |
 | Adding New Case to Existing Test Run       | Support is Currently in Development              | Supported         |
 | Adding New Case to Test Suite       | Not support              | Supported         |
