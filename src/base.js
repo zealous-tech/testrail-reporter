@@ -2,15 +2,29 @@ const TestRail = require("@dlenroc/testrail");
 const path = require("path");
 const { green: message, red: errorMessage } = require("colorette");
 const schedule = require('node-schedule');
+const getLogger = require('./logger.js');
+const logger = getLogger('playwright_reporter(base)');
+
 
 const DEFAULT_CONFIG_FILENAME = 'testrail.config.js';
 const configPath = path.resolve(process.cwd(), DEFAULT_CONFIG_FILENAME);
-const { base_url, user, pass, project_id, suite_id, testRailUpdateInterval, updateResultAfterEachCase, use_existing_run, create_new_run, status } = require(configPath);
+const {
+    base_url,
+    user,
+    pass,
+    project_id,
+    suite_id,
+    testRailUpdateInterval,
+    updateResultAfterEachCase,
+    use_existing_run,
+    create_new_run,
+    status
+} = require(configPath);
+
 const testResults = [];
 const case_ids = [];
 const copiedTestResults = [];
 const expectedFailures = {};
-
 
 class BaseClass {
     constructor() {
@@ -39,7 +53,7 @@ class BaseClass {
     }
 
     addRunToTestRail = async (case_ids) => {
-        console.log(message("TestRail Reporter Log: " + "Adding new Run to Test Rail\n"));
+        logger.info('Adding new Run to TestRail');
         const today = new Date();
         const seconds = today.getSeconds() < 10 ? `0${today.getSeconds()}` : today.getSeconds();
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -56,7 +70,14 @@ class BaseClass {
     };
 
     async updateTestRailResults(testRailResults, runId) {
-        console.log(message("TestRail Reporter Log: " + "Start adding run results into TestRail\n"), new Date());
+        logger.info('Adding run results to TestRail');
+        logger.debug('Test rail results:\n', testRailResults)
+        // console.table(
+        //     {
+        //         testRailResults: testRailResults,
+        //         runId: runId
+        //     }
+        // )
         let result;
         await this.tr_api
             .getCases(this.tesrailConfigs.project_id, { suite_id: this.tesrailConfigs.suite_id })
@@ -84,6 +105,7 @@ class BaseClass {
             .then(async () => {
                 if (this.tesrailConfigs.use_existing_run.id != 0) {
                     await this.tr_api.getResultsForRun(this.tesrailConfigs.use_existing_run.id).then((results) => {
+                        logger.info('Results:\n', results)
                         results.forEach((res) => {
                             if (res.status_id != this.tesrailConfigs.status.untested) {
                                 result = result.filter(testCase => testCase.status_id !== this.tesrailConfigs.status.skipped);
@@ -96,17 +118,21 @@ class BaseClass {
                 }
                 await this.tr_api.addResultsForCases(runId, res)
                     .then(() => {
-                        console.log("TestRail Reporter Log: " + 'Test result added TestRail successfully!\n', new Date());
+                        logger.info('Test result added to TestRail successfully!');
                     })
                     .catch((error) => {
-                        console.log(errorMessage("TestRail Reporter Log: " + 'Failed to add test result:'), error);
+                        logger.error('Failed to add test result')
+                        logger.error(error)
+                        logger.debug('Run ID: ', runId)
+                        logger.debug('res:\n', res)
                     });
 
             })
-            .catch((err) => console.log(errorMessage(err)));
+            .catch((err) => logger.error(err));
     }
 
     startScheduler(runId) {
+        logger.info('Starting scheduler');
         const job = schedule.scheduleJob({ rule: this.rule }, () => {
             this.updateCurrentResults(runId)
             if (global.need_to_stop && job) {
@@ -116,6 +142,7 @@ class BaseClass {
     }
 
     async updateCurrentResults(runId) {
+        logger.debug('updateCurrentResults');
         const testRailResults = [];
         for (const result of testResults) {
             const existsInCopied = copiedTestResults.some((item) => item.case_id === result.case_id);
