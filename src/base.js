@@ -70,8 +70,13 @@ class BaseClass {
     };
 
     async updateTestRailResults(testRailResults, runId) {
+        logger.debug('TestRail results amount:\n', testRailResults.length)
+        // logger.debug('Test rail results:\n', testRailResults)
+        if (testRailResults.length === 0) {
+            logger.warn('No new results to update in TestRail. Skipping...');
+            return;
+        }
         logger.info('Adding run results to TestRail');
-        logger.debug('Test rail results:\n', testRailResults)
         // console.table(
         //     {
         //         testRailResults: testRailResults,

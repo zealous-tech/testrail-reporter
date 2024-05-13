@@ -206,3 +206,24 @@ Differences Between testrail-reporter and TestRail CLI (The TestRail CLI is a co
 | Attaching Screenshots or Logs       | Support is Currently in Development             | Supported         |
 | Adding New Case to Existing Test Run       | Support is Currently in Development              | Supported         |
 | Adding New Case to Test Suite       | Not support              | Supported         |
+
+
+
+## Self testing
+
+To test the reporter, you can use the following steps:
+
+1. Clone the repository
+2. Run `npm install` to install the dependencies
+3. navigate to the `frameworks` folder
+4. choose the framework you want to test with
+
+### Playwright testing
+
+1. Navigate to the `playwright` folder
+2. Run `npm install` to install the dependencies
+3. set your testrail configurations in the `testrail.config.js` file
+4. update the `playwright.config.ts` file if needed
+5. set log level in src/logger.js file to `debug` for more detailed logs
+6. Run `npx playwright test` to run the tests
+

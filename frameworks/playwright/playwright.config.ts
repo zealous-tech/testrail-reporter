@@ -5,7 +5,7 @@ export default defineConfig({
     /* Reporter to use. See https://playwright.dev/docs/test-reporters */
     reporter: [
         ["list"],
-        ["@zealteam/testrail-reporter"]
+        ["../../index.js"]
     ],
     globalTimeout: 60 * 60 * 1000,
 
@@ -66,3 +66,4 @@ export default defineConfig({
     //     // },
     // ],
 });
+

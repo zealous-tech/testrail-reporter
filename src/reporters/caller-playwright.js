@@ -33,6 +33,7 @@ class CallerPlaywright extends BaseClass {
     }
 
     async onBegin(config, suite) {
+        logger.debug('onBegin')
         let customStepsSeparatedMap = {};
         logger.info('The reporter started successfully');
         logger.debug('tesrail configs:\n ', this.tesrailConfigs)
@@ -51,10 +52,12 @@ class CallerPlaywright extends BaseClass {
                 const configSuiteId = this.tesrailConfigs.suite_id;
                 logger.error(
                     `Failed to get test cases from project by`
-                    + `"${configProjectId}" id`
-                    +`and suite by "${configSuiteId}" id.`
+                    + `" ${configProjectId}" id`
+                    +` and suite by "${configSuiteId}" id.`
+                    + ` \nPlease check your TestRail configuration.`
                 )
                 logger.error(err);
+                process.exit(1);
             });
         for (let val of getCasesResponse) {
             const testCaseId = await val.id;
@@ -67,7 +70,7 @@ class CallerPlaywright extends BaseClass {
         existingCaseIds = case_ids.filter(item => suiteCaseIds.includes(item));
         existingCaseIds.forEach(id => {
             if (customStepsSeparatedMap[id]) {
-                existingCustomStepsSeparated[id] = customStepsSeparatedMap[id];                
+                existingCustomStepsSeparated[id] = customStepsSeparatedMap[id];
             }
         });
         if (this.tesrailConfigs.use_existing_run.id != 0) {
@@ -88,7 +91,7 @@ class CallerPlaywright extends BaseClass {
             runId = await createRunResponse.id;
         }
         getTestsResponse = await this.tr_api.getTests(runId);
-        logger.debug('tests response: \n', getTestsResponse)
+        logger.debug('tests response length: \n', getTestsResponse.length)
         for (let val of getTestsResponse) {
             // logger.info('val.case_id: ', val.case_id)
             testrailRunCaseIds.push(val.case_id);
@@ -101,7 +104,7 @@ class CallerPlaywright extends BaseClass {
     }
 
     async onTestEnd(test, result) {
-        // logger.debug('onTestEnd: result\n', result)
+        logger.debug('onTestEnd')
         custom_step_results = [];
         logger.debug('testrailRunCaseIds:\n', testrailRunCaseIds)
         // TODO: another way to check if the test case is in the testrail run
@@ -126,7 +129,7 @@ class CallerPlaywright extends BaseClass {
             }
             if (!testrailRunCaseIds.includes(+case_id[1])) {
                 logger.warn(
-                    `Test case with "${+case_id[1]}" id doen't exist`
+                    `Test case with "${+case_id[1]}" id doesn't exist`
                     + ` in TestRail run with "${runId}" id`
                 );
             }
@@ -139,10 +142,12 @@ class CallerPlaywright extends BaseClass {
                     logger.error(err)
                 });
             }
+            logger.warn('testResults.length: ', testResults.length)
         }
     }
 
     async onEnd(result) {
+        logger.debug('onEnd')
         let count = 0;
         let runResult;
         // TODO: another way to check if the test case is in the testrail run
@@ -247,7 +252,7 @@ class CallerPlaywright extends BaseClass {
             }
         } else {
             logger.warn(
-                `Test case with "${caseId}" id doen't have custom steps in TestRail`
+                `Test case with "${caseId}" id doesn't have custom steps in TestRail`
             );
         }
     }
