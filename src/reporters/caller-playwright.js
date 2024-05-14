@@ -12,6 +12,7 @@ const setTimeout = require('timers/promises').setTimeout;
 
 global.need_to_stop = false;
 let runId = 0;
+let runUrl = ''
 let commonIds = [];
 let removedCaseIds = [];
 let existingCaseIds = [];
@@ -88,7 +89,8 @@ class CallerPlaywright extends BaseClass {
             }
             createRunResponse = await this.addRunToTestRail(existingCaseIds)
                 .catch((err) => logger.error(errorMessage(err)));
-            runId = await createRunResponse.id;
+            runId = createRunResponse.id;
+            runUrl = createRunResponse.url;
         }
         getTestsResponse = await this.tr_api.getTests(runId);
         logger.debug('tests response length: \n', getTestsResponse.length)
@@ -178,18 +180,23 @@ class CallerPlaywright extends BaseClass {
             while (true) {
                 logger.debug('test results:\n', testResults)
                 if (count == 10) { count = 0; break; }
-                runResult = await this.tr_api.getResultsForCase(runId, testResults[testResults.length - 1].case_id).catch((error) => {
+                runResult = await this.tr_api.getResultsForCase(
+                    runId,
+                    testResults[testResults.length - 1].case_id
+                ).catch((error) => {
                     logger.error(error);
                 });
                 if (runResult.length !== 0) break;
                 count++;
             }
-            if (runResult[0].status_id == testResults[testResults.length - 1].status_id || count == 50) break;
+            const lastTestStatusId = testResults[testResults.length - 1].status_id;
+            if (runResult[0].status_id == lastTestStatusId || count == 50) break;
             await setTimeout(500);
             count++;
         }
-        if (this.tesrailConfigs.testRailUpdateInterval == 0 && !this.tesrailConfigs.updateResultAfterEachCase) {
-            await this.updateTestRailResults(testResults, runId);
+        if (this.tesrailConfigs.testRailUpdateInterval == 0
+            && !this.tesrailConfigs.updateResultAfterEachCase) {
+            await this.updateTestRailResults(testResults, runId, runUrl);
         }
         global.need_to_stop = true;
         if (copiedTestResults.length != testResults.length &&

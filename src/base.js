@@ -56,20 +56,38 @@ class BaseClass {
         logger.info('Adding new Run to TestRail');
         const today = new Date();
         const seconds = today.getSeconds() < 10 ? `0${today.getSeconds()}` : today.getSeconds();
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const monthNames = [
+            'Jan',
+            'Feb',
+            'Mar',
+            'Apr',
+            'May',
+            'Jun',
+            'Jul',
+            'Aug',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Dec'
+        ];
         const monthAbbreviation = monthNames[today.getMonth()];
         return await this.tr_api.addRun(this.tesrailConfigs.project_id, {
             suite_id: this.tesrailConfigs.suite_id,
-            milestone_id: this.tesrailConfigs.create_new_run.milestone_id !== 0 ? this.tesrailConfigs.create_new_run.milestone_id : undefined,
-            name: `${this.tesrailConfigs.create_new_run.run_name} ${today.getDate()}/${monthAbbreviation
-                }/${today.getFullYear()}_${today.getHours()}:${today.getMinutes()}:${seconds}`,
+            milestone_id:
+                this.tesrailConfigs.create_new_run.milestone_id !== 0
+                    ? this.tesrailConfigs.create_new_run.milestone_id
+                    : undefined,
+            name: `${this.tesrailConfigs.create_new_run.run_name}`
+                    + ` ${today.getDate()}.${monthAbbreviation}`
+                    + `.${today.getFullYear()}`
+                    + ` ${today.getHours()}:${today.getMinutes()}:${seconds}`,
             description: "TestRail automatic reporter module",
             include_all: this.tesrailConfigs.create_new_run.include_all,
             case_ids: case_ids
         });
     };
 
-    async updateTestRailResults(testRailResults, runId) {
+    async updateTestRailResults(testRailResults, runId, runUrl) {
         logger.debug('TestRail results amount:\n', testRailResults.length)
         // logger.debug('Test rail results:\n', testRailResults)
         if (testRailResults.length === 0) {
@@ -108,22 +126,29 @@ class BaseClass {
                 }, []);
             })
             .then(async () => {
-                if (this.tesrailConfigs.use_existing_run.id != 0) {
-                    await this.tr_api.getResultsForRun(this.tesrailConfigs.use_existing_run.id).then((results) => {
-                        logger.info('Results:\n', results)
-                        results.forEach((res) => {
-                            if (res.status_id != this.tesrailConfigs.status.untested) {
-                                result = result.filter(testCase => testCase.status_id !== this.tesrailConfigs.status.skipped);
-                            }
-                        })
+            if (this.tesrailConfigs.use_existing_run.id != 0) {
+                await this.tr_api.getResultsForRun(
+                    this.tesrailConfigs.use_existing_run.id
+                ).then((results) => {
+                    logger.info('Results:\n', results)
+                    results.forEach((res) => {
+                        if (res.status_id != this.tesrailConfigs.status.untested) {
+                            result = result.filter(
+                                testCase=>testCase.status_id!==this.tesrailConfigs.status.skipped
+                            );
+                        }
                     })
-                }
+                })
+            }
                 const res = {
                     "results": result
                 }
                 await this.tr_api.addResultsForCases(runId, res)
                     .then(() => {
                         logger.info('Test result added to TestRail successfully!');
+                        if (runUrl) {
+                            logger.info('New Run url:\n', runUrl, '\n')
+                        }
                     })
                     .catch((error) => {
                         logger.error('Failed to add test result')
