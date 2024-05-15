@@ -107,7 +107,6 @@ class CallerPlaywright extends BaseClass {
 
     async onTestEnd(test, result) {
         logger.debug('onTestEnd')
-        custom_step_results = [];
         logger.debug('testrailRunCaseIds:\n', testrailRunCaseIds)
         // TODO: another way to check if the test case is in the testrail run
         while (testrailRunCaseIds.length == 0) {
