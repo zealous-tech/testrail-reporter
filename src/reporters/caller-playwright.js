@@ -43,6 +43,10 @@ class CallerPlaywright extends BaseClass {
             logger.debug('case details:\n', case_details)
             if (case_details != null) case_ids.push(parseInt(case_details[1]));
         }
+        if (case_ids.length == 0) {
+            logger.warn('No test cases found. Exiting...')
+            process.exit(1);
+        }
         logger.info('Running test cases with these ids:\n', case_ids)
         getCasesResponse = await this.tr_api.getCases(
             this.tesrailConfigs.project_id,
