@@ -128,6 +128,8 @@ class CallerPlaywright extends BaseClass {
             this.stepResultComment(result, +case_id[1])
             if (custom_step_results.length > 0) {
                 data.custom_step_results = custom_step_results;
+                // nullify the custom_step_results array once its data is used
+                custom_step_results = [];
             }
             if (!testrailRunCaseIds.includes(+case_id[1])) {
                 logger.warn(
@@ -135,6 +137,7 @@ class CallerPlaywright extends BaseClass {
                     + ` in TestRail run with "${runId}" id`
                 );
             }
+
             if (testrailRunCaseIds.includes(+case_id[1])) testResults.push(data);
             if (this.tesrailConfigs.updateResultAfterEachCase
                 && testrailRunCaseIds.includes(+case_id[1])) {
@@ -144,7 +147,7 @@ class CallerPlaywright extends BaseClass {
                     logger.error(err)
                 });
             }
-            logger.warn('testResults.length: ', testResults.length)
+            logger.debug('testResults:\n ', testResults)
         }
     }
 

@@ -78,8 +78,8 @@ class BaseClass {
                     ? this.tesrailConfigs.create_new_run.milestone_id
                     : undefined,
             name: `${this.tesrailConfigs.create_new_run.run_name}`
-                    + ` ${today.getDate()}.${monthAbbreviation}`
-                    + `.${today.getFullYear()}`
+                    + ` ${today.getDate()}-${monthAbbreviation}`
+                    + `-${today.getFullYear()}`
                     + ` ${today.getHours()}:${today.getMinutes()}:${seconds}`,
             description: "TestRail automatic reporter module",
             include_all: this.tesrailConfigs.create_new_run.include_all,
