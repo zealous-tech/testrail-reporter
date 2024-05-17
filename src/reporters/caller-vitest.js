@@ -4,6 +4,8 @@ const { setTimeout } = require('timers/promises');
 const BaseClass = require("../base").BaseClass;
 const testResults = require("../base").testResults;
 const case_ids = require("../base").case_ids;
+const getLogger = require('../logger.js');
+const logger = getLogger('[vitest reporter]');
 
 const startList = {};
 global.need_to_stop = false;
@@ -23,7 +25,7 @@ class CallerVitest extends BaseClass {
     }
 
     onInit() {
-        console.log('TestRail Reporter Log: ' + "The reporter started successfully!");
+        logger.info('The reporter started successfully!');
     }
 
     onPathsCollected(paths) {
@@ -37,25 +39,45 @@ class CallerVitest extends BaseClass {
             if (this.tesrailConfigs.use_existing_run.id !== 0) {
                 runId = this.tesrailConfigs.use_existing_run.id;
                 await this.tr_api.getRun(runId).then(() => {
-                    console.log('TestRail Reporter Log: ' + "The runId is a valid test run id!!");
+                    logger.info('The runId is a valid test run id!!');
                 });
-                console.log('TestRail Reporter Log: ' + `The Run started, utilizing an existing run in TestRail with the ID=${runId}.`);
+                logger.info(
+                    `The Run started, utilizing an existing TestRail Run`
+                    + `with "${runId}" id.`
+                );
             } else {
-                getCasesResponse = await this.tr_api.getCases(this.tesrailConfigs.project_id, { suite_id: this.tesrailConfigs.suite_id })
+                getCasesResponse = await this.tr_api.getCases(
+                    this.tesrailConfigs.project_id,
+                    { suite_id: this.tesrailConfigs.suite_id }
+                )
                     .catch((err) => {
-                        console.log(errorMessage('TestRail Reporter Log: ' + `Failed to get test cases from project project_id=${this.tesrailConfigs.project_id} and suite suite_id=${this.tesrailConfigs.suite_id}: `) + err)
+                        const configProjectId = this.tesrailConfigs.project_id;
+                        const configSuiteId = this.tesrailConfigs.suite_id;
+                        logger.error(
+                            `Failed to get test cases from project by`
+                            + `" ${configProjectId}" id`
+                            +` and suite by "${configSuiteId}" id.`
+                            + ` \nPlease check your TestRail configuration.`
+                        )
+                        logger.error(err);
+                        process.exit(1);
                     });
                 for (let val of getCasesResponse) {
                     suiteCaseIds.push(await val.id);
                 }
                 removedCaseIds = case_ids.filter(item => !suiteCaseIds.includes(item));
                 existingCaseIds = case_ids.filter(item => suiteCaseIds.includes(item));
-                if (removedCaseIds.length > 0) console.log(errorMessage('TestRail Reporter Log: ' + `The provided TestRail suite does not contain the following case_ids: ` + `[${removedCaseIds}]`));
+                if (removedCaseIds.length > 0) {
+                    logger.error(
+                        `The provided TestRail suite does not contain`
+                        + ` the following case_ids: ` + `[${removedCaseIds}]`
+                    )
+                }
                 await this.addRunToTestRail(existingCaseIds)
                     .then(({ id }) => {
                         runId = id;
                     })
-                    .catch((err) => console.log('TestRail Reporter Log: ' + errorMessage(err)));
+                    .catch((err) => logger.error(err));
             }
             if (this.tesrailConfigs.testRailUpdateInterval !== 0) this.startScheduler(runId);
         }
@@ -98,9 +120,11 @@ class CallerVitest extends BaseClass {
             await this.updateTestRailResults(testResults, runId);
         }
         global.need_to_stop = true;
-        console.log('TestRail Reporter Log: ' +
-            "See Results: " +
-            blue(underline(`${this.tesrailConfigs.base_url}/index.php?/runs/view/${runId}\n`))
+        logger.info(
+            "TestRail Run URL:\n" +
+                blue(underline(
+                    `${this.tesrailConfigs.base_url}/index.php?/runs/view/${runId}\n`
+                ))
         );
     }
 
