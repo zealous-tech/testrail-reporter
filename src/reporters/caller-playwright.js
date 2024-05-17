@@ -2,7 +2,7 @@ const { green: message, red: errorMessage } = require("colorette");
 const Utils = require("../utils.js");
 const process = require('process');
 const getLogger = require('../logger.js');
-const logger = getLogger('playwright_reporter');
+const logger = getLogger('[playwright reporter]');
 
 const BaseClass = require("../base.js").BaseClass;
 const testResults = require("../base.js").testResults;

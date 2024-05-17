@@ -1,9 +1,8 @@
 const TestRail = require("@dlenroc/testrail");
 const path = require("path");
-const { green: message, red: errorMessage } = require("colorette");
 const schedule = require('node-schedule');
 const getLogger = require('./logger.js');
-const logger = getLogger('playwright_reporter(base)');
+const logger = getLogger('[playwright reporter(base)]');
 
 
 const DEFAULT_CONFIG_FILENAME = 'testrail.config.js';
@@ -78,9 +77,9 @@ class BaseClass {
                     ? this.tesrailConfigs.create_new_run.milestone_id
                     : undefined,
             name: `${this.tesrailConfigs.create_new_run.run_name}`
-                    + ` ${today.getDate()}-${monthAbbreviation}`
-                    + `-${today.getFullYear()}`
-                    + ` ${today.getHours()}:${today.getMinutes()}:${seconds}`,
+                + ` ${today.getDate()}-${monthAbbreviation}`
+                + `-${today.getFullYear()}`
+                + ` ${today.getHours()}:${today.getMinutes()}:${seconds}`,
             description: "TestRail automatic reporter module",
             include_all: this.tesrailConfigs.create_new_run.include_all,
             case_ids: case_ids
@@ -126,20 +125,20 @@ class BaseClass {
                 }, []);
             })
             .then(async () => {
-            if (this.tesrailConfigs.use_existing_run.id != 0) {
-                await this.tr_api.getResultsForRun(
-                    this.tesrailConfigs.use_existing_run.id
-                ).then((results) => {
-                    logger.info('Results:\n', results)
-                    results.forEach((res) => {
-                        if (res.status_id != this.tesrailConfigs.status.untested) {
-                            result = result.filter(
-                                testCase=>testCase.status_id!==this.tesrailConfigs.status.skipped
-                            );
-                        }
+                if (this.tesrailConfigs.use_existing_run.id != 0) {
+                    await this.tr_api.getResultsForRun(
+                        this.tesrailConfigs.use_existing_run.id
+                    ).then((results) => {
+                        logger.info('Results:\n', results)
+                        results.forEach((res) => {
+                            if (res.status_id != this.tesrailConfigs.status.untested) {
+                                result = result.filter(
+                                    testCase => testCase.status_id !== this.tesrailConfigs.status.skipped
+                                );
+                            }
+                        })
                     })
-                })
-            }
+                }
                 const res = {
                     "results": result
                 }

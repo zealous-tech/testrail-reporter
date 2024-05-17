@@ -39,7 +39,7 @@
     "log4js": "^6.9.1",
     "node-schedule": "^2.1.1",
     "playwright": "^1.40.1",
-    "vitest": "^1.1.0"
+    "vitest": "^1.6.0"
   },
   "directories": {
     "test": "tests"

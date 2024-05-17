@@ -156,13 +156,35 @@ NOTE: The configs under `create_new_run` will be used if `id` is `0`.
   }
 ```
 
-3. Write your tests using Vitest and Playwright, ensuring that each test has appropriate assertions and result statuses. You can include the TestRail test IDs in the test names or descriptions. For example:
+3. Write your tests using Vitest and Playwright, ensuring that each test has appropriate assertions and result statuses.
+You can include the TestRail test IDs in the test names or descriptions. For example:
 
 ```javascript
 it('Should perform a specific task @C123', async () => {
-  // Test logic here
+    // Test logic here
 });
 ```
+Note that if your test cases are already created in TestRail and has a test step, you should write your test cases in a way that the test steps are executed in the same order as in TestRail.
+
+Playwrigth test case example with test steps
+```javascript
+test("@C1 has title", async ({ page }) => {
+    await test.step("Step 1", async () => {
+        // test step logic here
+    });
+    await test.step("Step 2", async () => {
+        // test step logic here
+    });
+});
+```
+
+Vitest test case example with test steps
+```javascript
+it("@C123 adds 1 + 2 to equal 3", async () => {
+    expect(1 + 2).toBe(3);
+});
+```
+
 
 In the example above, _`@C123`_ represents the TestRail test ID. Replace _`C123`_ with the actual test ID from TestRail.
 
