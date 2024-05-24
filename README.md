@@ -152,6 +152,12 @@ Here is a quick GIF demonstrating how to configure your project.
 ![alt text](static/images/reporter_installation_and_configuration.gif)
 
 
+
+https://github.com/zealous-tech/testrail-reporter/assets/35601415/a0638ca0-4b29-4eb3-a543-16f6154639d7
+
+
+
+
 ## Usage
 
 To generate a report with [Vitest](https://vitest.dev/) or [Playwright](https://playwright.dev/) and upload it to [TestRail](https://www.testrail.com/), follow these steps:
