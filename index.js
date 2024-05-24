@@ -37,6 +37,10 @@ class PlaywrightTestRailReporter {
         await this.caller.onBegin(config, suite);
     }
 
+    async onTestBegin(test) {
+        await this.caller.onTestBegin(test);
+    }
+
     async onTestEnd(test, result) {
         await this.caller.onTestEnd(test, result);
     }

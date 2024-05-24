@@ -2,7 +2,7 @@ const TestRail = require("@dlenroc/testrail");
 const path = require("path");
 const schedule = require('node-schedule');
 const getLogger = require('./logger.js');
-const logger = getLogger('[playwright reporter(base)]');
+const logger = getLogger();
 
 
 const DEFAULT_CONFIG_FILENAME = 'testrail.config.js';
@@ -25,8 +25,10 @@ const case_ids = [];
 const copiedTestResults = [];
 const expectedFailures = {};
 
+
 class BaseClass {
     constructor() {
+        // TODO: fix naming
         this.tesrailConfigs = {
             base_url: base_url,
             user: user,
@@ -49,6 +51,13 @@ class BaseClass {
         this.rule = this.tesrailConfigs.testRailUpdateInterval <= 59
             ? `*/${this.tesrailConfigs.testRailUpdateInterval} * * * * *`
             : `*/${Math.round(this.tesrailConfigs.testRailUpdateInterval / 60)} * * * *`;
+
+        // TODO: complete related functionality
+        // this variable is used to decide
+        // if we need to create a new run in TestRail
+        this.needToCreateRun = true;
+
+        this.runURL = '';
     }
 
     addRunToTestRail = async (case_ids) => {
@@ -79,21 +88,23 @@ class BaseClass {
             name: `${this.tesrailConfigs.create_new_run.run_name}`
                 + ` ${today.getDate()}-${monthAbbreviation}`
                 + `-${today.getFullYear()}`
-                + ` ${today.getHours()}:${today.getMinutes()}:${seconds}`,
+                + ` ${today.toTimeString().split(' ')[0]}`,
             description: "TestRail automatic reporter module",
             include_all: this.tesrailConfigs.create_new_run.include_all,
             case_ids: case_ids
         });
     };
 
-    async updateTestRailResults(testRailResults, runId, runUrl) {
-        logger.debug('TestRail results amount:\n', testRailResults.length)
+    async updateTestRailResults(testRailResults, runId) {
         // logger.debug('Test rail results:\n', testRailResults)
         if (testRailResults.length === 0) {
-            logger.warn('No new results to update in TestRail. Skipping...');
+            logger.warn(
+                'No new results or added test cases'
+                + ' to update in TestRail. Skipping...'
+            );
             return;
         }
-        logger.info('Adding run results to TestRail');
+        logger.info(`Adding run results(${testRailResults.length}) to TestRail`);
         // console.table(
         //     {
         //         testRailResults: testRailResults,
@@ -145,9 +156,6 @@ class BaseClass {
                 await this.tr_api.addResultsForCases(runId, res)
                     .then(() => {
                         logger.info('Test result added to TestRail successfully!');
-                        if (runUrl) {
-                            logger.info('New Run url:\n', runUrl, '\n')
-                        }
                     })
                     .catch((error) => {
                         logger.error('Failed to add test result')
@@ -193,6 +201,12 @@ class BaseClass {
         }
         else {
             return "Test Passed within " + result.duration + " ms"
+        }
+    }
+
+    logRunURL() {
+        if (this.runURL != '') {
+            logger.info(`TestRail Run URL:\n${this.runURL}`);
         }
     }
 }

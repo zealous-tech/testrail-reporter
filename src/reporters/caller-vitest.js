@@ -1,11 +1,11 @@
-const { blue, red: errorMessage, underline } = require("colorette");
+const { blue, underline } = require("colorette");
 const Utils = require("../utils.js");
 const { setTimeout } = require('timers/promises');
 const BaseClass = require("../base").BaseClass;
 const testResults = require("../base").testResults;
 const case_ids = require("../base").case_ids;
 const getLogger = require('../logger.js');
-const logger = getLogger('[vitest reporter]');
+const logger = getLogger();
 
 const startList = {};
 global.need_to_stop = false;
