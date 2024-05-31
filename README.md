@@ -37,6 +37,7 @@ The reporter supports the following features
 - Update the test run results in TestRail either after running all test cases or simultaneously.
 - You have an option to update the test results of the same test run which executed several times, by saving all history data. Or you can create a new test run for every execution.
 - If a test case fails, you can observe an error message in the comment field of the TestRail test result.
+- Supports screenshots and videos attachment to the test results for Playwright.
 
 ## Installation
 
@@ -163,10 +164,19 @@ To generate a report with [Vitest](https://vitest.dev/) or [Playwright](https://
     <summary><b>Click to see Playwright usage</b></summary>
 
 ##### Add reporter to the config file
-Open your config file (e.g., `playwright.config.js` or `playwright.config.ts`) and add `'@zealteam/testrail-reporter'` into the `reporters` array.
+Open your config file (e.g., `playwright.config.js` or `playwright.config.ts`)
+and add `'@zealteam/testrail-reporter'` into the `reporters` array.
 
 ```javascript
-reporter: [['list'], ['@zealteam/testrail-reporter']],
+export default defineConfig({
+
+...
+
+    reporter: [['list'], ['@zealteam/testrail-reporter']],
+
+...
+
+});
 ```
 
 
@@ -199,6 +209,30 @@ test("@C123 has title", async ({ page }) => {
     });
 });
 ```
+
+##### Schreenshots and Videos
+No extra configuration is needed in the testrail.config.js file. Instead,
+ you can use Playwright configurations to generate screenshots and videos.
+
+For instance, if you want to capture a screenshot when a test fails,
+you should include the following configuration in your config file (e.g., `playwright.config.js` or `playwright.config.ts`):
+
+```javascript
+export default defineConfig({
+
+...
+
+    use: {
+        screenshot: 'only-on-failure',
+        video: 'retain-on-failure',
+    },
+
+...
+
+});
+```
+Generated screenshots will be available in testrail run tests' attachments.
+
 
 ##### Run your tests
 

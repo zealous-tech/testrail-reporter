@@ -1,3 +1,4 @@
+const TR_API = require("../testrailApi.js");
 const Utils = require("../utils.js");
 const process = require('process');
 const getLogger = require('../logger.js');
@@ -24,7 +25,7 @@ let stepResult;
 let actual;
 let expected;
 // TODO: fix naming and usage
-let existingCustomStepsSeparated = {};
+let existingCustomStepsMap = {};
 
 /* timeouts */
 // onEnd timeout to check if all the test cases are updated in the TestRail run
@@ -80,80 +81,113 @@ class CallerPlaywright extends BaseClass {
          * It is used to get the test cases from the TestRail suite
          * and create a new TestRail run if needed.
          * */
+
+        async function getCaseIds(self) {
+            // get the case ids from the suite
+            for (const val of suite.allTests()) {
+                const case_details = self.utils._formatTitle(val.title);
+                if (case_details != null) case_ids.push(
+                    parseInt(case_details[1])
+                );
+            }
+            if (case_ids.length == 0) {
+                logger.warn('No tests found marked for TestRail reporting.')
+            }
+            else {
+                logger.info(
+                    'Found these test case ids marked for TestRun: ',
+                    case_ids
+                )
+            }
+        }
+
+        async function getTRcases(self){
+            /*
+             * Get the test cases from the TestRail suite.
+             * If the test cases are not found, the reporter will exit.
+             * */
+            let getCasesResponse = await self.tr_api.getCases(
+                self.testrailConfigs.project_id,
+                { suite_id: self.testrailConfigs.suite_id }
+            )
+                .catch((err) => {
+                    const configProjectId = self.testrailConfigs.project_id;
+                    const configSuiteId = self.testrailConfigs.suite_id;
+                    logger.error(
+                        `Failed to get test cases from project by`
+                            + ` "${configProjectId}" id`
+                            + ` and suite by "${configSuiteId}" id.`
+                            + ` \nPlease check your TestRail configuration.`
+                    )
+                    logger.error(err);
+                    // TODO: reffer to the base.js needToCreateRun variable
+                    process.exit(1);
+                });
+            for (let val of getCasesResponse) {
+                const testCaseId = val.id;
+                trCaseIds.push(testCaseId);
+                // await self.tr_api.getCaseFields();
+                customStepsMap[testCaseId] = await val.custom_steps_separated;
+            }
+        }
+
+        async function getExistingCaseIds() {
+            existingCaseIds = case_ids.filter(item => trCaseIds.includes(item));
+            existingCaseIds.forEach(id => {
+                if (customStepsMap[id]) {
+                    existingCustomStepsMap[id] = customStepsMap[id];
+                }
+            });
+        }
+
         logger.debug('onBegin')
-        let customStepsSeparatedMap = {};
+        let customStepsMap = {};
         logger.info('The reporter started successfully');
         runningTestsAmount = suite.allTests().length;
-        for (const val of suite.allTests()) {
-            const case_details = this.utils._formatTitle(val.title);
-            // logger.error('case details:\n', val.title)
-            if (case_details != null) case_ids.push(parseInt(case_details[1]));
-        }
-        if (case_ids.length == 0) {
-            logger.warn('No tests found marked for TestRail reporting.')
-            // process.exit(1);
-        }
-        logger.info('Found these test case ids marked for TestRun: ', case_ids)
-        // runningTestsAmount = case_ids.length;
-        let getCasesResponse = await this.tr_api.getCases(
-            this.tesrailConfigs.project_id,
-            { suite_id: this.tesrailConfigs.suite_id }
-        )
-            .catch((err) => {
-                const configProjectId = this.tesrailConfigs.project_id;
-                const configSuiteId = this.tesrailConfigs.suite_id;
-                logger.error(
-                    `Failed to get test cases from project by`
-                    + ` "${configProjectId}" id`
-                    + ` and suite by "${configSuiteId}" id.`
-                    + ` \nPlease check your TestRail configuration.`
-                )
-                logger.error(err);
-                process.exit(1);
-            });
-        for (let val of getCasesResponse) {
-            const testCaseId = val.id;
-            trCaseIds.push(testCaseId);
-            // await this.tr_api.getCaseFields();
-            customStepsSeparatedMap[testCaseId] = await val.custom_steps_separated;
-        }
-        logger.debug('suiteCaseIds: ', trCaseIds)
+        logger.info('Running tests amount: ', runningTestsAmount)
+        await getCaseIds(this);
+        await getTRcases(this);
+        // logger.debug('suiteCaseIds: ', trCaseIds)
         removedCaseIds = case_ids.filter(item => !trCaseIds.includes(item));
-        existingCaseIds = case_ids.filter(item => trCaseIds.includes(item));
-        existingCaseIds.forEach(id => {
-            if (customStepsSeparatedMap[id]) {
-                existingCustomStepsSeparated[id] = customStepsSeparatedMap[id];
-            }
-        });
-        this.validateSuiteTestsMatching();
-        if (this.tesrailConfigs.use_existing_run.id != 0) {
-            runId = await this.tesrailConfigs.use_existing_run.id;
+        await getExistingCaseIds(trCaseIds);
+        this.needToCreateRun = this.needNewRun();
+        if (this.testrailConfigs.use_existing_run.id != 0) {
+            runId = await this.testrailConfigs.use_existing_run.id;
             logger.info(
                 `The Run started, utilizing an existing TestRail Run`
                 + ` with "${runId}" id.`
             );
         } else {
             if (removedCaseIds.length > 0) {
-                logger.warn(
-                    `The provided TestRail suite does not contain`
-                    + ` the following case ids: [${removedCaseIds}]`
-                );
+                if (this.needToCreateRun) {
+                    logger.warn(
+                        `The provided TestRail suite does not contain`
+                            + ` the following case ids: [${removedCaseIds}]`
+                    );
+                }
             }
-            createRunResponse = await this.addRunToTestRail(existingCaseIds)
-                .catch((err) => logger.error(err));
-            runId = createRunResponse.id;
-            this.runURL = createRunResponse.url;
-            this.logRunURL()
+            if (this.needToCreateRun) {
+                createRunResponse = await this.addRunToTestRail(existingCaseIds)
+                    .catch((err) => logger.error(err));
+                runId = createRunResponse.id;
+                this.runURL = createRunResponse.url;
+                this.logRunURL()
+            }
         }
-        let getTestsResponse = await this.tr_api.getTests(runId);
-        testrailRunCaseIds = getTestsResponse.map(val => val.case_id);
-        commonIds = testrailRunCaseIds.filter(id => existingCaseIds.includes(id));
-        if (this.tesrailConfigs.testRailUpdateInterval != 0
-            && !this.tesrailConfigs.updateResultAfterEachCase) {
+        if (this.needToCreateRun) {
+            let getTestsResponse = await this.tr_api.getTests(runId);
+            testrailRunCaseIds = getTestsResponse.map(val => val.case_id);
+            commonIds = testrailRunCaseIds.filter(
+                id => existingCaseIds.includes(id)
+            );
+        }
+        logger.debug('commonIds: ', commonIds)
+
+        if (this.testrailConfigs.testRailUpdateInterval != 0
+            && !this.testrailConfigs.updateResultAfterEachCase) {
             this.startScheduler(runId)
         };
         onBeginCompleted = true;
-        logger.debug('commonIds: ', commonIds)
         logger.debug('onBegin end\n\n')
     }
 
@@ -173,53 +207,97 @@ class CallerPlaywright extends BaseClass {
          * The onTestEnd method is called after each test case ends.
          * It is used to add the test results to the testResults array.
          * */
+
+        function getCaseAttachments() {
+            let attachments = [];
+            for (const attachment of result.attachments) {
+                if (attachment.path) {
+                    if (attachment.name === 'screenshot'
+                        || attachment.name === 'video') {
+                        attachments.push(attachment.path);
+                    }
+                }
+            }
+            return attachments;
+        }
+
+        async function uploadAttachments(self, runTestId) {
+            for (const attachment of getCaseAttachments()) {
+                await TR_API.addAttachmentToCase(
+                    self.testrailConfigs.base_url,
+                    self.testrailConfigs.user,
+                    self.testrailConfigs.pass,
+                    attachment,
+                    runTestId
+                );
+            }
+        }
+
+        async function updateRunIfNeeded(self, data) {
+            if (self.testrailConfigs.updateResultAfterEachCase
+                && testrailRunCaseIds.includes(+case_id[1])) {
+                let apiRes = await self.tr_api.addResultForCase(
+                    runId,
+                    +case_id[1],
+                    data
+                )
+                    .catch((err) => {
+                        logger.error('Failed to add test result')
+                        logger.error(err)
+                    });
+                if (apiRes != null && apiRes.id != undefined
+                    && apiRes.hasOwnProperty('id')) {
+                    await uploadAttachments(self, apiRes.id);
+                    updatedTestsAmount += 1;
+                }
+            }
+        }
+
+        function informMissingCaseIfNeed(self, caseId) {
+            if (!testrailRunCaseIds.includes(+caseId) && self.needToCreateRun) {
+                logger.warn(
+                    `Test case with "${+caseId}" id doesn't exist`
+                        + ` in TestRail run with "${runId}" id.`
+                        + ` Please check your TestRail run/suite.`
+                );
+            }
+        }
+
+        async function constructCaseData(self, case_id) {
+            const status_id = self.testrailConfigs.status[result.status];
+            const comment = self.setTestComment(result);
+            const data = {
+                title: test.title,
+                case_id: +case_id[1],
+                status_id,
+                comment,
+                elapsed: self.utils._formatTime(result.duration) || "",
+                defects: "",
+                version: "",
+                attachments: getCaseAttachments(),
+            };
+            // update with steps data if needed
+            self.stepResultComment(result, +case_id[1])
+            if (custom_step_results.length > 0) {
+                data.custom_step_results = custom_step_results;
+                // nullify the custom_step_results array once its data is used
+                custom_step_results = [];
+            }
+            return data
+        }
+
         await waitForBegin();
         await waitForTest(test.id);
         logger.debug('onTestEnd: ', test.title)
 
         const case_id = this.utils._formatTitle(test.title);
         if (case_id) {
-            const status_id = this.tesrailConfigs.status[result.status];
-            const comment = this.setTestComment(result);
-            const data = {
-                case_id: +case_id[1],
-                status_id,
-                comment,
-                elapsed: this.utils._formatTime(result.duration) || "",
-                defects: "",
-                version: "",
-            };
-            this.stepResultComment(result, +case_id[1])
-            if (custom_step_results.length > 0) {
-                data.custom_step_results = custom_step_results;
-                // nullify the custom_step_results array once its data is used
-                custom_step_results = [];
+            informMissingCaseIfNeed(this, +case_id[1]);
+            const caseData = await constructCaseData(this, case_id)
+            if (testrailRunCaseIds.includes(+case_id[1])) {
+                testResults.push(caseData);
             }
-            if (!testrailRunCaseIds.includes(+case_id[1])) {
-                logger.warn(
-                    `Test case with "${+case_id[1]}" id doesn't exist`
-                    + ` in TestRail run with "${runId}" id.`
-                    + ` Please check your TestRail run/suite.`
-                );
-            }
-
-            if (testrailRunCaseIds.includes(+case_id[1])) testResults.push(data);
-            if (this.tesrailConfigs.updateResultAfterEachCase
-                && testrailRunCaseIds.includes(+case_id[1])) {
-                let apiRes = await this.tr_api.addResultForCase(
-                    runId,
-                    +case_id[1],
-                    data
-                )
-                .catch((err) => {
-                    logger.error('Failed to add test result')
-                    logger.error(err)
-                });
-                if (apiRes != null && apiRes.id != undefined
-                    && apiRes.hasOwnProperty('id')) {
-                    updatedTestsAmount+=1;
-                }
-            }
+            await updateRunIfNeeded(this, caseData);
         }
         completedTestsAmount += 1;
         // remove the test id from the testQueue
@@ -244,7 +322,7 @@ class CallerPlaywright extends BaseClass {
          * */
 
         async function waitForAllUpdates(self) {
-            if (self.tesrailConfigs.updateResultAfterEachCase) {
+            if (self.testrailConfigs.updateResultAfterEachCase) {
                 let timeout = 0;
                 while (updatedTestsAmount != commonIds.length) {
                     if (timeout == allCasesUpdateTimeout) {
@@ -261,6 +339,7 @@ class CallerPlaywright extends BaseClass {
                 }
             }
         }
+
         // need to wait for the onBegin hook to complete because onEnd hook
         // can be called before the onBegin hook is completed
         await waitForBegin();
@@ -272,31 +351,36 @@ class CallerPlaywright extends BaseClass {
 
         logger.debug('onEnd\n\n')
 
-        if (this.tesrailConfigs.testRailUpdateInterval == 0
-            && !this.tesrailConfigs.updateResultAfterEachCase) {
+        if (this.testrailConfigs.testRailUpdateInterval == 0
+            && !this.testrailConfigs.updateResultAfterEachCase) {
             await this.updateTestRailResults(testResults, runId);
         }
         global.need_to_stop = true;
         if (copiedTestResults.length != testResults.length &&
-            this.tesrailConfigs.testRailUpdateInterval != 0 &&
-            !this.tesrailConfigs.updateResultAfterEachCase) {
+            this.testrailConfigs.testRailUpdateInterval != 0 &&
+            !this.testrailConfigs.updateResultAfterEachCase) {
             await this.updateCurrentResults(runId);
         }
+
         this.logRunURL()
     }
 
-    validateSuiteTestsMatching() {
+    needNewRun() {
         /*
          * If the test case ids are not found in the TestRail suite,
          * or the test case ids are not provided,
          * the reporter will not exit, but will inform the user about it.
+         * Returns true if the TestRail run needs to be created.
          * */
         if (removedCaseIds == case_ids || existingCaseIds.length == 0) {
             logger.warn(
                 `The provided TestRail suite does not contain`
                 + ` any of the provided case ids.`
+                + ` No TestRail run will be created.`
             );
+            return false;
         }
+        return true;
     }
 
     sanitizeString(str) {
@@ -308,7 +392,7 @@ class CallerPlaywright extends BaseClass {
     }
 
     stepResultComment(result, caseId) {
-        const testRailCaseSteps = existingCustomStepsSeparated[caseId];
+        const testRailCaseSteps = existingCustomStepsMap[caseId];
         if (testRailCaseSteps) {
             // logger.debug(
             //     `TestRail case steps:\n${JSON.stringify(testRailCaseSteps, null, 2)}\n`
@@ -325,11 +409,11 @@ class CallerPlaywright extends BaseClass {
                         testRailExpected = testRailStep.expected;
                     } else {
                         testRailExpected = 'TestRail test step doesn\'t match to the framework step';
-                        testCaseStatus = this.tesrailConfigs.status.untested;
+                        testCaseStatus = this.testrailConfigs.status.untested;
                     }
                 } else {
                     testRailExpected = 'Test rail test step doesn\'t match to the framework step';
-                    testCaseStatus = this.tesrailConfigs.status.untested;
+                    testCaseStatus = this.testrailConfigs.status.untested;
                 }
                 if (step && step.error != undefined) {
                     let stepError = step.error.message.replace(/\u001b\[\d+m/g, '').split('\n')
@@ -341,13 +425,13 @@ class CallerPlaywright extends BaseClass {
                         "content": testRailStep.content,
                         "expected": testRailExpected + "\n" + expected,
                         "actual": actual,
-                        "status_id": testCaseStatus ?? this.tesrailConfigs.status.failed
+                        "status_id": testCaseStatus ?? this.testrailConfigs.status.failed
                     }
                 } else {
                     stepResult = {
                         "content": testRailStep.content,
                         "expected": testRailExpected,
-                        "status_id": testCaseStatus ?? this.tesrailConfigs.status.passed
+                        "status_id": testCaseStatus ?? this.testrailConfigs.status.passed
                     }
                 }
                 custom_step_results.push(stepResult)

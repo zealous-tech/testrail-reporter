@@ -36,8 +36,8 @@ class CallerVitest extends BaseClass {
         files_count++;
         this.processStartList(file);
         if (files_count === paths_count) {
-            if (this.tesrailConfigs.use_existing_run.id !== 0) {
-                runId = this.tesrailConfigs.use_existing_run.id;
+            if (this.testrailConfigs.use_existing_run.id !== 0) {
+                runId = this.testrailConfigs.use_existing_run.id;
                 await this.tr_api.getRun(runId).then(() => {
                     logger.info('The runId is a valid test run id!!');
                 });
@@ -47,12 +47,12 @@ class CallerVitest extends BaseClass {
                 );
             } else {
                 getCasesResponse = await this.tr_api.getCases(
-                    this.tesrailConfigs.project_id,
-                    { suite_id: this.tesrailConfigs.suite_id }
+                    this.testrailConfigs.project_id,
+                    { suite_id: this.testrailConfigs.suite_id }
                 )
                     .catch((err) => {
-                        const configProjectId = this.tesrailConfigs.project_id;
-                        const configSuiteId = this.tesrailConfigs.suite_id;
+                        const configProjectId = this.testrailConfigs.project_id;
+                        const configSuiteId = this.testrailConfigs.suite_id;
                         logger.error(
                             `Failed to get test cases from project by`
                             + `" ${configProjectId}" id`
@@ -79,7 +79,7 @@ class CallerVitest extends BaseClass {
                     })
                     .catch((err) => logger.error(err));
             }
-            if (this.tesrailConfigs.testRailUpdateInterval !== 0) this.startScheduler(runId);
+            if (this.testrailConfigs.testRailUpdateInterval !== 0) this.startScheduler(runId);
         }
     }
 
@@ -90,9 +90,9 @@ class CallerVitest extends BaseClass {
             if (case_id && element[1].duration >= 0) {
                 if (element[1].state === 'pass') element[1].state = 'passed';
                 if (element[1].state === 'fail') element[1].state = 'failed';
-                const status_id = this.tesrailConfigs.status[element[1].state];
+                const status_id = this.testrailConfigs.status[element[1].state];
                 const comment =
-                    status_id === this.tesrailConfigs.status.failed
+                    status_id === this.testrailConfigs.status.failed
                         ? `#Error message:#\n ${JSON.stringify(
                             element[1].errors[0].message,
                             null,
@@ -113,7 +113,7 @@ class CallerVitest extends BaseClass {
     }
 
     async onFinished(packs) {
-        if (this.tesrailConfigs.testRailUpdateInterval === 0) {
+        if (this.testrailConfigs.testRailUpdateInterval === 0) {
             while (runId === 0) {
                 await setTimeout(100);
             }
@@ -123,7 +123,7 @@ class CallerVitest extends BaseClass {
         logger.info(
             "TestRail Run URL:\n" +
                 blue(underline(
-                    `${this.tesrailConfigs.base_url}/index.php?/runs/view/${runId}\n`
+                    `${this.testrailConfigs.base_url}/index.php?/runs/view/${runId}\n`
                 ))
         );
     }
@@ -141,7 +141,7 @@ class CallerVitest extends BaseClass {
                     }
                     const data = {
                         case_id: case_id ? +case_id[1] : 0,
-                        status_id: this.tesrailConfigs.status.skipped,
+                        status_id: this.testrailConfigs.status.skipped,
                         comment: "This test was marked as 'Skipped'.",
                         elapsed: "",
                         defects: "",
