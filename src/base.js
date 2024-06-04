@@ -172,7 +172,11 @@ class BaseClass {
          * */
         logger.info('Uploading attachments to TestRail');
         for (let i = 0; i < apiRes.length; i++) {
-            for (const attachment of localResults[i].attachments) {
+            let attachments = localResults[i].attachments
+            if (!attachments) {
+                continue
+            }
+            for (const attachment of attachments) {
                 await TR_API.addAttachmentToCase(
                     this.testrailConfigs.base_url,
                     this.testrailConfigs.user,
