@@ -349,21 +349,19 @@ vitest run
 
 Differences between testrail-reporter and TestRail CLI (The TestRail CLI is a command-line interface tool developed by the TestRail team, allowing users to upload test automation results from any JUnit-style XML file to TestRail.)
 
-| Feature           | testrail-reporter | TestRail CLI |
-|-------------------|-------------------|--------------|
-| Simultaneously Result Updates          | Supported        | Not support       |
-| Specify an Interval to Periodically Update Results          | Supported        | Not support       |
-| Custom Status Support (xfail, fixed)       | Support is Currently in Development              | Not support         |
-| Updating Results After Running All Test Cases           | Supported               | Supported   |
-| Storing Step Results     | Supported       | Supported  |
-| Adding  Comment to the Results     | Supported       | Supported  |
-| Creating New Run | Supported              | Supported       |
-| Updating Existing Run       | Supported              | Supported         |
-| Attaching Screenshots or Logs       | Support is Currently in Development             | Supported         |
-| Adding New Case to Existing Test Run       | Support is Currently in Development              | Supported         |
-| Adding New Case to Test Suite       | Not support              | Supported         |
-
-
+| Feature                                                | testrail-reporter                   | TestRail CLI  |
+|--------------------------------------------------------|-------------------------------------|---------------|
+| Simultaneously Result Updates                          | Supported                           | Not supported |
+| Specify an Interval to Periodically Update Results     | Supported                           | Not supported |
+| Custom Status Support (xfail, fixed)                   | Support is Currently in Development | Not supported |
+| Updating Results After Running All Test Cases          | Supported                           | Supported     |
+| Storing Step Results                                   | Supported                           | Supported     |
+| Adding Comment to the Results                          | Supported                           | Supported     |
+| Creating New Run                                       | Supported                           | Supported     |
+| Updating Existing Run                                  | Supported                           | Supported     |
+| Attaching Screenshots or Logs                          | Support is Currently in Development | Supported     |
+| Adding New Case to Existing Test Run                   | Support is Currently in Development | Supported     |
+| Adding New Case to Test Suite                          | Not supported                       | Supported     |
 
 ## Self testing
 

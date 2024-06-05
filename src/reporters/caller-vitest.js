@@ -1,4 +1,4 @@
-const { blue, underline } = require("colorette");
+// const { blue, underline } = require("colorette");
 const Utils = require("../utils.js");
 const { setTimeout } = require('timers/promises');
 const BaseClass = require("../base").BaseClass;
@@ -25,65 +25,104 @@ class CallerVitest extends BaseClass {
     }
 
     onInit() {
+        logger.debug('oniInit')
         logger.info('The reporter started successfully!');
     }
 
     onPathsCollected(paths) {
+        logger.debug('onPathsCollected')
         paths_count = paths.length;
     }
 
     async onCollected(file) {
+
+        const setRunId = async () => {
+            runId = this.testrailConfigs.use_existing_run.id;
+            await this.tr_api.getRun(runId).then(() => {
+                logger.info('The runId is a valid test run id!!');
+            });
+            logger.info(
+                `The Run started, utilizing an existing TestRail Run`
+                    + `with "${runId}" id.`
+            );
+        };
+
+        const getSuiteCaseIds = async () => {
+            getCasesResponse = await this.tr_api.getCases(
+                this.testrailConfigs.project_id,
+                { suite_id: this.testrailConfigs.suite_id }
+            )
+                .catch((err) => {
+                    const configProjectId = this.testrailConfigs.project_id;
+                    const configSuiteId = this.testrailConfigs.suite_id;
+                    logger.error(
+                        `Failed to get test cases from project by`
+                            + `" ${configProjectId}" id`
+                            + ` and suite by "${configSuiteId}" id.`
+                            + ` \nPlease check your TestRail configuration.`
+                    )
+                    logger.error(err);
+                    process.exit(1);
+                });
+            for (let val of getCasesResponse) {
+                suiteCaseIds.push(val.id);
+            }
+        };
+
+        const informAboutMissingCases = () => {
+            if (removedCaseIds.length > 0) {
+                if (this.needToCreateRun) {
+                    logger.warn(
+                        `The provided TestRail suite does not contain`
+                            + ` the following case ids: [${removedCaseIds}]`
+                    );
+                }
+            }
+        };
+
+        const addRunToTestRail = async () => {
+            if (this.needToCreateRun) {
+                await this.addRunToTestRail(existingCaseIds)
+                .then(({ id }) => {
+                    runId = id;
+                    logger.info(
+                        `The Run created successfully with "${runId}" id.`
+                    );
+                })
+                .catch((err) => logger.error(err));
+            }
+        };
+
+
+        logger.debug('onCollected')
         files_count++;
         this.processStartList(file);
         if (files_count === paths_count) {
             if (this.testrailConfigs.use_existing_run.id !== 0) {
-                runId = this.testrailConfigs.use_existing_run.id;
-                await this.tr_api.getRun(runId).then(() => {
-                    logger.info('The runId is a valid test run id!!');
-                });
-                logger.info(
-                    `The Run started, utilizing an existing TestRail Run`
-                    + `with "${runId}" id.`
-                );
+                await setRunId();
             } else {
-                getCasesResponse = await this.tr_api.getCases(
-                    this.testrailConfigs.project_id,
-                    { suite_id: this.testrailConfigs.suite_id }
-                )
-                    .catch((err) => {
-                        const configProjectId = this.testrailConfigs.project_id;
-                        const configSuiteId = this.testrailConfigs.suite_id;
-                        logger.error(
-                            `Failed to get test cases from project by`
-                            + `" ${configProjectId}" id`
-                            +` and suite by "${configSuiteId}" id.`
-                            + ` \nPlease check your TestRail configuration.`
-                        )
-                        logger.error(err);
-                        process.exit(1);
-                    });
-                for (let val of getCasesResponse) {
-                    suiteCaseIds.push(await val.id);
-                }
+                await getSuiteCaseIds();
+                logger.debug('suiteCaseIds: ', suiteCaseIds)
                 removedCaseIds = case_ids.filter(item => !suiteCaseIds.includes(item));
+                logger.debug('removedCaseIds: ', removedCaseIds)
                 existingCaseIds = case_ids.filter(item => suiteCaseIds.includes(item));
-                if (removedCaseIds.length > 0) {
-                    logger.error(
-                        `The provided TestRail suite does not contain`
-                        + ` the following case_ids: ` + `[${removedCaseIds}]`
-                    )
-                }
-                await this.addRunToTestRail(existingCaseIds)
-                    .then(({ id }) => {
-                        runId = id;
-                    })
-                    .catch((err) => logger.error(err));
+                logger.debug('existingCaseIds: ', existingCaseIds)
+                this.needToCreateRun = this.needNewRun(
+                    case_ids,
+                    existingCaseIds,
+                    removedCaseIds
+                );
+                informAboutMissingCases();
+                await addRunToTestRail();
             }
-            if (this.testrailConfigs.testRailUpdateInterval !== 0) this.startScheduler(runId);
+            if (this.testrailConfigs.testRailUpdateInterval !== 0) {
+                this.startScheduler(runId);
+            }
         }
     }
 
     onTaskUpdate(packs) {
+        logger.debug('onTaskUpdate')
         packs.forEach((element) => {
             const testRunId = element[0];
             const case_id = startList[testRunId];
@@ -113,6 +152,7 @@ class CallerVitest extends BaseClass {
     }
 
     async onFinished(packs) {
+        logger.debug('onFinished')
         if (this.testrailConfigs.testRailUpdateInterval === 0) {
             while (runId === 0) {
                 await setTimeout(100);
@@ -120,11 +160,9 @@ class CallerVitest extends BaseClass {
             await this.updateTestRailResults(testResults, runId);
         }
         global.need_to_stop = true;
+        let runUrl = `${this.testrailConfigs.base_url}/index.php?/runs/view/${runId}`;
         logger.info(
-            "TestRail Run URL:\n" +
-                blue(underline(
-                    `${this.testrailConfigs.base_url}/index.php?/runs/view/${runId}\n`
-                ))
+            "TestRail Run URL:\n" + runUrl
         );
     }
 
@@ -134,7 +172,9 @@ class CallerVitest extends BaseClass {
                 this.processStartList(element.tasks);
             } else {
                 const case_id = this.utils._formatTitle(element.name);
-                if (case_id != null) case_ids.push(parseInt(case_id[1]));
+                if (case_id != null) {
+                    case_ids.push(parseInt(case_id[1]));
+                }
                 if (element.mode === "skip") {
                     if (case_id && case_id[1]) {
                         startList[element.id] = +case_id[1];

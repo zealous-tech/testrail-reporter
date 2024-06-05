@@ -170,7 +170,7 @@ class BaseClass {
          * It accepts the localResults representing the run test cases results
          * and the apiRes representing the test cases results from the TestRail.
          * */
-        logger.info('Uploading attachments to TestRail');
+        logger.info('Uploading attachments to TestRail if any...');
         for (let i = 0; i < apiRes.length; i++) {
             let attachments = localResults[i].attachments
             if (!attachments) {
@@ -246,6 +246,24 @@ class BaseClass {
         else {
             return "Test Passed within " + result.duration + " ms."
         }
+    }
+
+    needNewRun(case_ids, existingCaseIds, removedCaseIds) {
+        /*
+         * If the test case ids are not found in the TestRail suite,
+         * or the test case ids are not provided,
+         * the reporter will not exit, but will inform the user about it.
+         * Returns true if the TestRail run needs to be created.
+         * */
+        if (removedCaseIds == case_ids || existingCaseIds.length == 0) {
+            logger.warn(
+                `The provided TestRail suite does not contain`
+                    + ` any of the provided case ids.`
+                    + ` No TestRail run will be created.`
+            );
+            return false;
+        }
+        return true;
     }
 
     logRunURL() {

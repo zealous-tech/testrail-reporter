@@ -150,8 +150,13 @@ class CallerPlaywright extends BaseClass {
         // logger.debug('suiteCaseIds: ', trCaseIds)
         removedCaseIds = case_ids.filter(item => !trCaseIds.includes(item));
         await getExistingCaseIds(trCaseIds);
-        this.needToCreateRun = this.needNewRun();
+        this.needToCreateRun = this.needNewRun(
+            case_ids,
+            existingCaseIds,
+            removedCaseIds
+        );
         if (this.testrailConfigs.use_existing_run.id != 0) {
+            // TODO: add catch block
             runId = await this.testrailConfigs.use_existing_run.id;
             logger.info(
                 `The Run started, utilizing an existing TestRail Run`
@@ -363,24 +368,6 @@ class CallerPlaywright extends BaseClass {
         }
 
         this.logRunURL()
-    }
-
-    needNewRun() {
-        /*
-         * If the test case ids are not found in the TestRail suite,
-         * or the test case ids are not provided,
-         * the reporter will not exit, but will inform the user about it.
-         * Returns true if the TestRail run needs to be created.
-         * */
-        if (removedCaseIds == case_ids || existingCaseIds.length == 0) {
-            logger.warn(
-                `The provided TestRail suite does not contain`
-                + ` any of the provided case ids.`
-                + ` No TestRail run will be created.`
-            );
-            return false;
-        }
-        return true;
     }
 
     sanitizeString(str) {
