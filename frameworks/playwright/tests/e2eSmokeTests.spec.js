@@ -11,13 +11,14 @@ import {
 import path from "path";
 const configPath = path.join(__dirname, "../testrail.config.js");
 
-test.describe.only("Creating New Run", function () {
+test.describe("Creating New Run", function () {
   let trFunc;
   let getRunsBeforeNewRun;
   let getRunsAfterNewRun;
   let myRun;
   let runIDs = [];
   let runData;
+  
   test.beforeAll(async () => {
     trFunc = new TestRailFunc(config);
     backupConfig(configPath);
@@ -29,6 +30,7 @@ test.describe.only("Creating New Run", function () {
     runData = await trFunc.getRun(myRun.id);
     runIDs.push(myRun.id);
   });
+
   test.afterAll(async () => {
     restoreConfig(configPath);
     trFunc = new TestRailFunc(config);
@@ -127,12 +129,14 @@ test.describe("Update Results AfterEach/AfterAll Cases", function () {
     backupConfig(configPath);
     trFunc = new TestRailFunc(config);
   });
+
   test.afterAll(async () => {
     restoreConfig(configPath);
     trFunc = new TestRailFunc(config);
     let delRuns = await trFunc.deleteRun(runIDs);
     console.log("🚀 ~ test.afterAll ~ delRuns:", delRuns);
   });
+
   test("AfterEach / updateResultAfterEachCase is true", async () => {
     modifyConfig(configPath, { ...config, updateResultAfterEachCase: true });
     console.log("Start run AfterEach tests ...");
@@ -146,6 +150,7 @@ test.describe("Update Results AfterEach/AfterAll Cases", function () {
     let finalTest = runsTests[runsTests.length - 1];
     expect(finalTest.results).toBeTruthy();
   });
+
   test("AftherAll / updateResultAfterEachCase is false", async () => {
     modifyConfig(configPath, { ...config, updateResultAfterEachCase: false });
     console.log("Start run AfterAll tests ...");
@@ -168,12 +173,14 @@ test.describe("Update Result with Interval", function () {
     backupConfig(configPath);
     trFunc = new TestRailFunc(config);
   });
+
   test.afterAll(async () => {
     restoreConfig(configPath);
     trFunc = new TestRailFunc(config);
     let delRuns = await trFunc.deleteRun(runIDs);
     console.log("🚀 ~ test.afterAll ~ delRuns:", delRuns);
   });
+
   test("Interval / testRailUpdateInterval is not equal to 0", async () => {
     test.slow();
     let testRunInterval = 3;
@@ -209,12 +216,14 @@ test.describe("Updating Existing Run", function () {
       stdio: "inherit",
     });
   });
+
   test.afterAll(async () => {
     restoreConfig(configPath);
     trFunc = new TestRailFunc(config);
     let delRuns = await trFunc.deleteRun(runIDs);
     console.log("🚀 ~ test.afterAll ~ delRuns:", delRuns);
   });
+
   test("Existing Run / Valid id in the use_existing_run", async () => {
     getRunsBeforeNewRun = await trFunc.getRuns();
     let myRun = await trFunc.getRun(

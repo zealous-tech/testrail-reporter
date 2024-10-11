@@ -63,6 +63,7 @@ test.describe("Update Result Scenarios", function () {
     test.beforeAll(async () => {
       getInterval = process.env.INTERVAL;
     });
+    
     testsData.forEach((data, index) => {
       test(`${data.name} @C${data.id}`, async () => {
         test.slow();

@@ -32,6 +32,7 @@ test.describe("Example Tests", function () {
       }
     });
   });
+
   test.afterEach(async ({ page }) => {
     await page.waitForTimeout(300);
   });
