@@ -1,8 +1,7 @@
-// Example schema TestRail config
 module.exports = {
-  base_url: "https://example.testrail.io/",
-  user: "example@example.com",
-  pass: "example1234",
+  base_url: "http://localhost:3001",
+  user: "MyEmail",
+  pass: "MyPassword",
   project_id: 1,
   suite_id: 1,
   testRailUpdateInterval: 0,
@@ -24,4 +23,4 @@ module.exports = {
     expFail: 7,
     fixed: 9
   }
-}
+};

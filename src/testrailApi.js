@@ -22,7 +22,7 @@ async function addAttachmentToCase(
     let attachment = fs.createReadStream(attachmentPath);
     let data = new FormData();
     data.append("attachment", attachment);
-    let uploadUrl = `${url}index.php?/api/v2/add_attachment_to_result/${resultId}`;
+    let uploadUrl = `${url}/index.php?/api/v2/add_attachment_to_result/${resultId}`;
 
     const response = await axios.post(uploadUrl, data, {
       headers: {
