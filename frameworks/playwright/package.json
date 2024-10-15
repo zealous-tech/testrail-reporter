@@ -3,12 +3,20 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "tests": "npx playwright test tests/child_tests/example.spec.js --config=playwright.config.with-reporter.ts",
+    "tests:AfterEach": "npx playwright test ./child_tests/updateResults.spec.js --config=playwright.config.with-reporter.ts --grep @AfterEach",
+    "tests:AfterAll": "npx playwright test ./child_tests/updateResults.spec.js --config=playwright.config.with-reporter.ts --grep @AfterAll",
+    "tests:Interval": "INTERVAL=$npm_config_interval npx playwright test ./child_tests/updateResults.spec.js --config=playwright.config.with-reporter.ts --grep @Interval",
+    "tests:ExistingRun": "npx playwright test ./child_tests/updateResults.spec.js --config=playwright.config.with-reporter.ts --grep @ExistingRun",
+    "e2eSmokeTests": "npx playwright test tests/e2eSmokeTests.spec.js --config=playwright.config.no-reporter.ts"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@playwright/test": "^1.44.0",
-    "@types/node": "^20.12.11"
+    "@types/node": "^20.12.11",
+    "cross-env": "^7.0.3"
   }
 }
