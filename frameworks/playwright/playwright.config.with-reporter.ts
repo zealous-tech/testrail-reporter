@@ -1,7 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-    testDir: "./tests",
+    testDir: "./tests/child_tests",
     reporter: [
         ["list"],
         ["../../index.js"]

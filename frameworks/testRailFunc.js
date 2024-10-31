@@ -49,4 +49,14 @@ export class TestRailFunc {
       console.log("Error ::: ", error);
     }
   }
+  // Retrieves all test cases for current suite
+  async getCases() {
+    try {
+      return await this.testrail.getCases(this.project_id, {
+        suite_id: this.suite_id,
+      });
+    } catch (error) {
+      console.error("Error fetching test cases :::", error.message);
+    }
+  }
 }

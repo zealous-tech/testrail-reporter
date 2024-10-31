@@ -18,7 +18,6 @@ test.describe("Creating New Run", function () {
   let myRun;
   let runIDs = [];
   let runData;
-  
   test.beforeAll(async () => {
     trFunc = new TestRailFunc(config);
     backupConfig(configPath);
@@ -35,7 +34,7 @@ test.describe("Creating New Run", function () {
     restoreConfig(configPath);
     trFunc = new TestRailFunc(config);
     let delRuns = await trFunc.deleteRun(runIDs);
-    console.log("🚀 ~ test.afterAll ~ delRuns:", delRuns);
+    console.log("🚀 Deleted Runs ::::", delRuns);
   });
 
   test("Verify that a new test run is created successfully when the conditions are met", async () => {
@@ -52,6 +51,7 @@ test.describe("Creating New Run", function () {
     const allHaveError = failedTests
       .map((test) => test.results)
       .every((res) => res[0].comment.includes("Error:"));
+
     expect(allHaveError).toBe(true);
   });
 
@@ -61,6 +61,7 @@ test.describe("Creating New Run", function () {
       .every((res) => {
         return res[0].attachments.length;
       });
+
     expect(allHaveAttachments).toBe(true);
   });
 
@@ -81,10 +82,13 @@ test.describe("Creating New Run", function () {
     const skippedTests = await runData.tests.filter(
       (test) => test.status_id === config.status.skipped
     );
+
     expect(skippedTests.length).toBeTruthy();
+
     const allHaveSkipStatus = skippedTests
       .map((test) => test.results)
       .every((res) => res[0].status_id === config.status.skipped);
+
     expect(allHaveSkipStatus).toBe(true);
   });
 
@@ -93,6 +97,11 @@ test.describe("Creating New Run", function () {
       `^${config.create_new_run.run_name} \\d{1,2}-[A-Za-z]{3}-\\d{4} \\d{2}:\\d{2}:\\d{2}$`
     );
     expect(myRun.name).toMatch(dateFormatRegex);
+  });
+
+  test("Ensure that when you set include_all to false, the TestRail test run includes only those test cases that were included in the automated tests. ", async () => {
+    const cases = await trFunc.getCases();
+    expect(runData.tests.length).toBeLessThan(cases.length);
   });
 
   test("Verify that the reporter works with updated configurations when the default TestRail config is changed", async () => {
@@ -105,19 +114,79 @@ test.describe("Creating New Run", function () {
       ...config,
       create_new_run: newData,
     };
+
     modifyConfig(configPath, changedConfig);
+    console.log("Start run example tests ...");
     execSync("npm run tests", { stdio: "inherit" });
+
     const runsLength = getRunsAfterNewRun.length;
     getRunsAfterNewRun = await trFunc.getRuns();
+
     expect(getRunsAfterNewRun.length).toBeGreaterThan(runsLength);
+
     const myNewRun = getRunsAfterNewRun[getRunsAfterNewRun.length - 1];
     runIDs.push(myNewRun.id);
     const dateFormatRegex = new RegExp(
       `^${newData.run_name} \\d{1,2}-[A-Za-z]{3}-\\d{4} \\d{2}:\\d{2}:\\d{2}$`
     );
+
     expect(myNewRun.name).toMatch(dateFormatRegex);
     delete newData.run_name;
     expect(myNewRun).toMatchObject(newData);
+  });
+
+  test("Verify that the TestRail test run includes all test cases within the specified test suite when include_all is set to true", async () => {
+    let newData = {
+      include_all: true,
+      run_name: "Test Run Playwright",
+      milestone_id: 0,
+    };
+    let changedConfig = {
+      ...config,
+      create_new_run: newData,
+    };
+
+    modifyConfig(configPath, changedConfig);
+    console.log("Start run example tests ...");
+    execSync("npm run tests", { stdio: "inherit" });
+
+    const cases = await trFunc.getCases();
+    getRunsBeforeNewRun = await trFunc.getRuns();
+    const myRun = await trFunc.getRun(
+      getRunsBeforeNewRun[getRunsBeforeNewRun.length - 1].id
+    );
+    runIDs.push(myRun.id);
+
+    expect(myRun.tests.length).toBe(cases.length);
+
+    test.step("Make sure that when include_all is true, tests that have not been tested are given the status untested", async () => {
+      const untestedTests = await myRun.tests.filter(
+        (test) => test.status_id === config.status.untested
+      );
+      expect(untestedTests.length).toBeTruthy();
+    });
+  });
+
+  test("Verify that the message 'TestRailException: Field is not a valid milestone.' is handled when milestone_id is not valid.", async () => {
+    let newData = {
+      include_all: true,
+      run_name: "Test Run Playwright",
+      milestone_id: 42,
+    };
+    let changedConfig = {
+      ...config,
+      create_new_run: newData,
+    };
+
+    modifyConfig(configPath, changedConfig);
+
+    try {
+      console.log("Start run example tests ...");
+      execSync("npm run tests", { stdio: "pipe" });
+    } catch (error) {
+      const output = error.stdout.toString();
+      expect(output).toContain("Field :milestone_id is not a valid milestone");
+    }
   });
 });
 
@@ -134,13 +203,15 @@ test.describe("Update Results AfterEach/AfterAll Cases", function () {
     restoreConfig(configPath);
     trFunc = new TestRailFunc(config);
     let delRuns = await trFunc.deleteRun(runIDs);
-    console.log("🚀 ~ test.afterAll ~ delRuns:", delRuns);
+    console.log("🚀 Deleted Runs ::::", delRuns);
   });
 
   test("AfterEach / updateResultAfterEachCase is true", async () => {
     modifyConfig(configPath, { ...config, updateResultAfterEachCase: true });
+
     console.log("Start run AfterEach tests ...");
     execSync("npm run tests:AfterEach", { stdio: "inherit" });
+
     getRunsBeforeNewRun = await trFunc.getRuns();
     const myRun = await trFunc.getRun(
       getRunsBeforeNewRun[getRunsBeforeNewRun.length - 1].id
@@ -148,19 +219,23 @@ test.describe("Update Results AfterEach/AfterAll Cases", function () {
     runIDs.push(myRun.id);
     let runsTests = myRun.tests;
     let finalTest = runsTests[runsTests.length - 1];
+
     expect(finalTest.results).toBeTruthy();
   });
 
   test("AftherAll / updateResultAfterEachCase is false", async () => {
     modifyConfig(configPath, { ...config, updateResultAfterEachCase: false });
+
     console.log("Start run AfterAll tests ...");
     execSync("npm run tests:AfterAll", { stdio: "inherit" });
+
     getRunsBeforeNewRun = await trFunc.getRuns();
     const myRun = await trFunc.getRun(
       getRunsBeforeNewRun[getRunsBeforeNewRun.length - 1].id
     );
     runIDs.push(myRun.id);
     let tests = myRun.tests;
+
     expect(tests.map((test) => test.results)).not.toContain(undefined);
   });
 });
@@ -178,7 +253,7 @@ test.describe("Update Result with Interval", function () {
     restoreConfig(configPath);
     trFunc = new TestRailFunc(config);
     let delRuns = await trFunc.deleteRun(runIDs);
-    console.log("🚀 ~ test.afterAll ~ delRuns:", delRuns);
+    console.log("🚀 Deleted Runs ::::", delRuns);
   });
 
   test("Interval / testRailUpdateInterval is not equal to 0", async () => {
@@ -189,10 +264,12 @@ test.describe("Update Result with Interval", function () {
       testRailUpdateInterval: testRunInterval,
     });
     testRunInterval++;
-    console.log("Start run AfterEach tests ...");
+
+    console.log("Start run Interval tests ...");
     execSync(`npm run tests:Interval --interval=${testRunInterval}`, {
       stdio: "inherit",
     });
+
     await delay(testRunInterval);
     getRunsBeforeNewRun = await trFunc.getRuns();
     const myRun = await trFunc.getRun(
@@ -201,6 +278,7 @@ test.describe("Update Result with Interval", function () {
     runIDs.push(myRun.id);
     let runsTests = myRun.tests;
     let finalTest = runsTests[runsTests.length - 1];
+
     expect(finalTest.results).toBeTruthy();
   });
 });
@@ -212,6 +290,7 @@ test.describe("Updating Existing Run", function () {
   test.beforeAll(async () => {
     backupConfig(configPath);
     trFunc = new TestRailFunc(config);
+    console.log("Start run ExistingRun tests ...");
     execSync("npm run tests:ExistingRun", {
       stdio: "inherit",
     });
@@ -221,7 +300,7 @@ test.describe("Updating Existing Run", function () {
     restoreConfig(configPath);
     trFunc = new TestRailFunc(config);
     let delRuns = await trFunc.deleteRun(runIDs);
-    console.log("🚀 ~ test.afterAll ~ delRuns:", delRuns);
+    console.log("🚀 Deleted Runs ::::", delRuns);
   });
 
   test("Existing Run / Valid id in the use_existing_run", async () => {
@@ -229,19 +308,43 @@ test.describe("Updating Existing Run", function () {
     let myRun = await trFunc.getRun(
       getRunsBeforeNewRun[getRunsBeforeNewRun.length - 1].id
     );
-    console.log("🚀 ~ test ~ myRun.id:", myRun.id);
     runIDs.push(myRun.id);
+
     modifyConfig(configPath, {
       ...config,
       use_existing_run: { id: myRun.id },
     });
+
     console.log("Start run ExistingRun tests ...");
     execSync("npm run tests:ExistingRun", {
       stdio: "inherit",
     });
+
     myRun = await trFunc.getRun(myRun.id);
     let tests = myRun.tests;
     const allHaveLengthTwo = tests.every((test) => test.results.length === 2);
+
     expect(allHaveLengthTwo).toBe(true);
+  });
+
+  test("Existing Run / Invalid id in the use_existing_run", async () => {
+    getRunsBeforeNewRun = await trFunc.getRuns();
+    let myRun = await trFunc.getRun(
+      getRunsBeforeNewRun[getRunsBeforeNewRun.length - 1].id
+    );
+    let incorrectID = myRun.id + 1;
+
+    modifyConfig(configPath, {
+      ...config,
+      use_existing_run: { id: incorrectID },
+    });
+
+    try {
+      console.log("Start run ExistingRun tests ...");
+      execSync("npm run tests:ExistingRun", { stdio: "pipe" });
+    } catch (error) {
+      const output = error.stdout.toString();
+      expect(output).toContain("Field :run_id is not a valid test run");
+    }
   });
 });

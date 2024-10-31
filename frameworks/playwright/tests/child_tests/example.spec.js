@@ -5,8 +5,8 @@ const testsData = [
   { id: 10, name: "EX test title 2", result: [true, true] },
   { id: 21, name: "EX test title 3", result: true },
   { id: 24, name: "EX test title 4", result: false },
-  { id: 25, name: "EX test title 5", result: false },
-  { id: 26, name: "EX test title 6", result: false },
+  { id: 7, name: "EX test title 5", result: false },
+  { id: 4, name: "EX test title 6", result: false },
   { id: 29, name: "EX test title 7", result: true, status: "skip" },
   { id: 30, name: "EX test title 8", result: true, status: "skip" },
 ];
