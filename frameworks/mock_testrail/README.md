@@ -63,7 +63,7 @@ touch mock_testrail_db.json
 Run the PHP built-in server from the project directory:
 
 ```bash
-php -S http://localhost:3001
+php -S localhost:3001
 ```
 This will start the server on `http://localhost:3001`
 
