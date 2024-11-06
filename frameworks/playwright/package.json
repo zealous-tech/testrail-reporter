@@ -4,12 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "tests": "npx playwright test tests/child_tests/example.spec.js --config=playwright.config.with-reporter.ts",
-    "tests:AfterEach": "npx playwright test ./child_tests/updateResults.spec.js --config=playwright.config.with-reporter.ts --grep @AfterEach",
-    "tests:AfterAll": "npx playwright test ./child_tests/updateResults.spec.js --config=playwright.config.with-reporter.ts --grep @AfterAll",
-    "tests:Interval": "INTERVAL=$npm_config_interval npx playwright test ./child_tests/updateResults.spec.js --config=playwright.config.with-reporter.ts --grep @Interval",
-    "tests:ExistingRun": "npx playwright test ./child_tests/updateResults.spec.js --config=playwright.config.with-reporter.ts --grep @ExistingRun",
-    "e2eSmokeTests": "npx playwright test tests/e2eSmokeTests.spec.js --config=playwright.config.no-reporter.ts"
+    "tests": "npx playwright test ./example.spec.js --config=playwright.config.with-reporter.ts",
+    "tests:AfterEach": "npx playwright test ./updateResults.spec.js --config=playwright.config.with-reporter.ts --grep @AfterEach",
+    "tests:AfterAll": "npx playwright test ./updateResults.spec.js --config=playwright.config.with-reporter.ts --grep @AfterAll",
+    "tests:Interval": "INTERVAL=$npm_config_interval npx playwright test ./updateResults.spec.js --config=playwright.config.with-reporter.ts --grep @Interval",
+    "tests:ExistingRun": "npx playwright test ./updateResults.spec.js --config=playwright.config.with-reporter.ts --grep @ExistingRun",
+    "e2eSmokeTests": "npx playwright test ./e2eSmokeTests.spec.js --config=playwright.config.no-reporter.ts"
   },
   "keywords": [],
   "author": "",

@@ -26,6 +26,7 @@ function readDatabase() {
         'testResults' => [],
         'attachments' => [],
         'testCasesInRun' => [],
+        'milestones' => [],
         'nextRunId' => 101,
         'nextResultId' => 1,
         'nextAttachmentId' => 1,
@@ -68,7 +69,7 @@ if (preg_match('/\/index\.php\?\/api\/v2\/get_cases\/(\d+)/', $request_uri, $mat
             $response = [
                 "offset" => 0,
                 "limit" => 250,
-                "size" => count($testCases),
+                "size" => 250,
                 "_links" => [
                     "next" => null,
                     "prev" => null
@@ -146,8 +147,9 @@ elseif (preg_match('/\/index\.php\?\/api\/v2\/update_run\/(\d+)/', $request_uri,
             writeDatabase($database);
             echo json_encode($database['testRuns'][$runId]);
         } else {
-            header('HTTP/1.1 404 Not Found');
-            echo json_encode(['error' => 'Run not found']);
+            header('HTTP/1.1 400 Bad Request');
+            echo json_encode(['error' => 'Field :run_id is not a valid test run']);
+            exit;
         }
     }
 }
@@ -203,7 +205,14 @@ elseif (preg_match('/\/index\.php\?\/api\/v2\/get_results_for_run\/(\d+)/', $req
 elseif (preg_match('/\/index\.php\?\/api\/v2\/get_tests\/(\d+)/', $request_uri, $matches)) {
     $runId = $matches[1];
     $method = $_SERVER['REQUEST_METHOD'];
-    if ($method === 'GET') {        
+    if ($method === 'GET') {
+        // Check if the run ID exists in the database
+        if (!isset($database['testRuns'][$runId])) {
+            // Return error if the run ID does not exist
+            header('HTTP/1.1 400 Bad Request');
+            echo json_encode(['error' => 'Field :run_id is not a valid test run']);
+            exit;
+        }        
         // Get the tests for this run
         $tests = $database['testRuns'][$runId]['tests'];
         // Response structure
@@ -229,50 +238,79 @@ elseif (preg_match('/\/index\.php\?\/api\/v2\/add_run\/(\d+)/', $request_uri, $m
         $input = json_decode(file_get_contents('php://input'), true);
         $suiteId = isset($input['suite_id']) ? $input['suite_id'] : null;
 
+        // Validate milestone_id
+        if (isset($input['milestone_id']) && !in_array($input['milestone_id'], array_keys($database['milestones']))) {
+            header('HTTP/1.1 400 Bad Request');
+            echo json_encode(['error' => 'Field :milestone_id is not a valid milestone']);
+            exit;
+        }
+
         // Check if the project and suite exist
         if (isset($database['testCases'][$projectId][$suiteId])) {
             $run_id = $database['nextRunId']++;
             $run_name = isset($input['name']) ? $input['name'] : 'New Test Run';
             $description = isset($input['description']) ? $input['description'] : 'Default Description';
-            $include_all = isset($input['include_all']) ? $input['include_all'] : false;
+            $include_all = isset($input['include_all']) ? $input['include_all'] : true; // Default to true
             $case_ids = isset($input['case_ids']) ? $input['case_ids'] : [];
             $run_url = $config['base_url'] . '/index.php?/runs/view/' . $run_id;
 
             // Create the tests for the run
             $tests = [];
-            foreach ($case_ids as $index => $case_id) {
-                // Verify the case exists in the suite
-                if (isset($database['testCases'][$projectId][$suiteId][$case_id])) {
+            if ($include_all) {
+                // Include all test cases from the suite if include_all is true
+                foreach ($database['testCases'][$projectId][$suiteId] as $case_id => $case_data) {
                     $test = [
-                        "id" => $index + 1, // Unique ID for each test in the run
+                        "id" => count($tests) + 1, // Unique ID for each test in the run
                         "case_id" => $case_id,
                         "status_id" => 3, // Default to 'untested'
                         "assignedto_id" => null,
                         "run_id" => $run_id,
-                        "title" => $database['testCases'][$projectId][$suiteId][$case_id]['title'],
-                        "template_id" => $database['testCases'][$projectId][$suiteId][$case_id]['template_id'],
-                        "type_id" => $database['testCases'][$projectId][$suiteId][$case_id]['type_id'],
-                        "priority_id" => $database['testCases'][$projectId][$suiteId][$case_id]['priority_id'],
+                        "title" => $case_data['title'],
+                        "template_id" => $case_data['template_id'],
+                        "type_id" => $case_data['type_id'],
+                        "priority_id" => $case_data['priority_id'],
                         "estimate" => null,
                         "estimate_forecast" => "1s",
                         "refs" => null,
                         "milestone_id" => null,
                         "case_assignedto_id" => null,
-                        "custom_automation_type" => 0,
-                        "custom_preconds" => null,
-                        "custom_steps" => isset($database['testCases'][$projectId][$suiteId][$case_id]['custom_steps_separated']) ? count($database['testCases'][$projectId][$suiteId][$case_id]['custom_steps_separated']) : null,
-                        "custom_testrail_bdd_scenario" => null,
-                        "custom_expected" => null,
-                        "custom_steps_separated" =>  isset($database['testCases'][$projectId][$suiteId][$case_id]['custom_steps_separated']) ? $database['testCases'][$projectId][$suiteId][$case_id]['custom_steps_separated'] : [],
-                        "custom_mission" => null,
-                        "custom_goals" => null,
-                        "sections_display_order" => $index + 1,
-                        "cases_display_order" => $index + 1,
-                        "case_comments" => []
+                        "custom_steps" => isset($case_data['custom_steps_separated']) ? count($case_data['custom_steps_separated']) : null,
+                        "custom_steps_separated" => isset($case_data['custom_steps_separated']) ? $case_data['custom_steps_separated'] : [],
                     ];
                     $tests[] = $test;
                 }
+            } else {
+                // Only include specified case_ids if include_all is false
+                foreach ($case_ids as $case_id) {
+                    if (isset($database['testCases'][$projectId][$suiteId][$case_id])) {
+                        $case_data = $database['testCases'][$projectId][$suiteId][$case_id];
+                        $test = [
+                            "id" => count($tests) + 1, // Unique ID for each test in the run
+                            "case_id" => $case_id,
+                            "status_id" => 3, // Default to 'untested'
+                            "assignedto_id" => null,
+                            "run_id" => $run_id,
+                            "title" => $case_data['title'],
+                            "template_id" => $case_data['template_id'],
+                            "type_id" => $case_data['type_id'],
+                            "priority_id" => $case_data['priority_id'],
+                            "estimate" => null,
+                            "estimate_forecast" => "1s",
+                            "refs" => null,
+                            "milestone_id" => null,
+                            "case_assignedto_id" => null,
+                            "custom_steps" => isset($case_data['custom_steps_separated']) ? count($case_data['custom_steps_separated']) : null,
+                            "custom_steps_separated" => isset($case_data['custom_steps_separated']) ? $case_data['custom_steps_separated'] : [],
+                        ];
+                        $tests[] = $test;
+                    } else {
+                        header('HTTP/1.1 404 Not Found');
+                        echo json_encode(['error' => "Test case $case_id not found"]);
+                        exit;
+                    }
+                }
             }
+
             // Create the run data and include the tests
             $run = [
                 'id' => $run_id,
@@ -344,6 +382,7 @@ elseif (preg_match('/\/index\.php\?\/api\/v2\/add_run\/(\d+)/', $request_uri, $m
         }
     }
 }
+
 // POST index.php?/api/v2/delete_run/{run_id}
 elseif (preg_match('/\/index\.php\?\/api\/v2\/delete_run\/(\d+)/', $request_uri, $matches)) {
     $run_id =  $matches[1];
