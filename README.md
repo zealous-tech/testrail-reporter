@@ -152,13 +152,7 @@ status: {
 
 Here is a quick GIF demonstrating how to configure your project.
 
-![alt text](https://zealous-tech.github.io/testrail-reporter/reporter_installation_and_configuration_resize_2.gif)
-
-<img src="https://zealous-tech.github.io/testrail-reporter/reporter_installation_and_configuration.gif" width="400" height="200" />
-
-<img src="https://zealous-tech.github.io/testrail-reporter/reporter_installation_and_configuration_resize.gif" width="400" height="200" />
-
-<img src="https://zealous-tech.github.io/testrail-reporter/reporter_installation_and_configuration_resize_2.gif" width="400" height="200" />
+![alt text](https://zealous-tech.github.io/testrail-reporter/reporter_installation_and_configuration_resize.gif)
 
 ## Usage
 
