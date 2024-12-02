@@ -152,8 +152,7 @@ status: {
 
 Here is a quick GIF demonstrating how to configure your project.
 
-![alt text](https://github.com/zealous-tech/testrail-reporter/blob/gh-pages/docs/reporter_installation_and_configuration.gif)
-
+![alt text](https://zealous-tech.github.io/testrail-reporter/reporter_installation_and_configuration.gif)
 
 ## Usage
 
@@ -341,7 +340,7 @@ vitest run
 
 ## Reporter Workflow
 
-![alt text](https://github.com/zealous-tech/testrail-reporter/blob/gh-pages/docs/workflow.png)
+![alt text](https://zealous-tech.github.io/testrail-reporter/workflow.png)
 
 
 ## Comparison with TestRail CLI
