@@ -341,7 +341,7 @@ vitest run
 
 ## Reporter Workflow
 
-![alt text](static/images/workflow.png)
+![alt text](https://github.com/zealous-tech/testrail-reporter/blob/gh-pages/docs/workflow.png)
 
 
 ## Comparison with TestRail CLI
