@@ -1,6 +1,4 @@
 # standard ignores
 node_modules/
-# ignores media folder
-docs/
 # ignores test frameworks
 frameworks/
