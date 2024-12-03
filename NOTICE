@@ -1,4 +1,4 @@
-TestRail Reporter
+NOTICE
 
 Copyright (c) 2024 zealous Tech Team
 
@@ -6,9 +6,9 @@ This project includes software developed by Microsoft Corporation and used in ac
 
 Playwright is a Node.js library that provides a high-level API to control web browsers.
 
-Library: Playwright
-Version: [1.49.0]
-License: Apache License 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+- Library: Playwright
+- Version: [1.49.0]
+- License: Apache License 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 The Playwright library is used in this project without modification. Please refer to the official Playwright repository for further details: https://github.com/microsoft/playwright.
 

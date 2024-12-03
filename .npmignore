@@ -2,3 +2,5 @@
 node_modules/
 # ignores test frameworks
 frameworks/
+# ignores NOTICE
+NOTICE
