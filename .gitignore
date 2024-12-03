@@ -1,5 +1,7 @@
 *.log
 *.output
+*/LICENSE
+*/NOTICE
 package-lock.json
 node_modules/
 dist/
