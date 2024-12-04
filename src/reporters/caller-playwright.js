@@ -1,4 +1,3 @@
-const TR_API = require("../testrailApi.js");
 const Utils = require("../utils.js");
 const process = require("process");
 const getLogger = require("../logger.js");
@@ -225,10 +224,7 @@ class CallerPlaywright extends BaseClass {
 
     async function uploadAttachments(self, runTestId) {
       for (const attachment of getCaseAttachments()) {
-        await TR_API.addAttachmentToCase(
-          self.testrailConfigs.base_url,
-          self.testrailConfigs.user,
-          self.testrailConfigs.pass,
+        await self.tr_api.addAttachmentToResult(
           attachment,
           runTestId
         );
