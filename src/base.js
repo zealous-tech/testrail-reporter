@@ -1,9 +1,7 @@
 const TestRail = require("@dlenroc/testrail");
 const schedule = require("node-schedule");
-const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
-const FormData = require("form-data");
 const getLogger = require("./logger.js");
 const logger = getLogger();
 
@@ -27,47 +25,6 @@ const case_ids = [];
 const copiedTestResults = [];
 const expectedFailures = {};
 
-class ZealTestRail extends TestRail {
-    constructor(config) {
-        super(config);
-        this.host = config.host;
-        this.username = config.username;
-        this.password = config.password;
-    }
-
-    async addAttachmentToResult(attachmentPath, resultId) {
-        /*
-         * Uploads the provided attachment to the TestRail result.
-         * Attachment can represent a screenshot or video file path.
-         */
-        try {
-            logger.info(`Uploading "${attachmentPath}" attachment.`);
-            const attachment = fs.createReadStream(attachmentPath);
-            const data = new FormData();
-            data.append("attachment", attachment);
-            const uploadUrl = `${this.host}/index.php?/api/v2/add_attachment_to_result/${resultId}`;
-
-            const response = await axios.post(uploadUrl, data, {
-                headers: {
-                    "Content-Type": `multipart/form-data; boundary=${data._boundary}`,
-                },
-                auth: {
-                    username: this.username,
-                    password: this.password,
-                },
-            });
-
-            if (response.status === 200) {
-                logger.debug(`\nUploaded "${attachmentPath}" attachment.`);
-            } else {
-                logger.warn(`Failed to upload "${attachmentPath}" attachment.`);
-            }
-        } catch (error) {
-            logger.warn(`Error uploading attachment: ${error.message}`);
-        }
-    }
-}
-
 class BaseClass {
   constructor() {
     // TODO: fix naming
@@ -84,7 +41,7 @@ class BaseClass {
       status: status,
     };
 
-    this.tr_api = new ZealTestRail({
+    this.tr_api = new TestRail({
       host: this.testrailConfigs.base_url,
       username: this.testrailConfigs.user,
       password: this.testrailConfigs.pass,
@@ -180,7 +137,7 @@ class BaseClass {
           await this.tr_api
             .getResultsForRun(this.testrailConfigs.use_existing_run.id)
             .then((results) => {
-              logger.info("Results:\n", results);
+              logger.debug("Results:\n", results);
               results.forEach((res) => {
                 if (res.status_id != this.testrailConfigs.status.untested) {
                   result = result.filter(
@@ -216,17 +173,22 @@ class BaseClass {
      * It accepts the localResults representing the run test cases results
      * and the apiRes representing the test cases results from the TestRail.
      * */
-    logger.info("Uploading attachments to TestRail if any...");
     for (let i = 0; i < apiRes.length; i++) {
       let attachments = localResults[i].attachments;
       if (!attachments) {
         continue;
       }
       for (const attachment of attachments) {
-        await this.tr_api.addAttachmentToResult(
-            attachment,
-            apiRes[i].id
-        );
+        try {
+            logger.info(`Uploading "${attachment}" attachment.`);
+            const payload = {
+                name: path.basename(attachment),
+                value: fs.createReadStream(attachment),
+            };
+            await self.tr_api.addAttachmentToResult(apiRes[i].id, payload);
+        } catch (error) {
+            logger.warn(`Error uploading attachment: ${error.message}`);
+        }
       }
     }
   }

@@ -8,7 +8,7 @@ export default defineConfig({
     ],
     use: {
         screenshot: 'on',
-        video: 'retain-on-failure',
+        video: 'on',
     },
 
 });
