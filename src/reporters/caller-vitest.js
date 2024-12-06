@@ -1,4 +1,3 @@
-// const { blue, underline } = require("colorette");
 const Utils = require("../utils.js");
 const { setTimeout } = require("timers/promises");
 const BaseClass = require("../base").BaseClass;
@@ -144,6 +143,8 @@ class CallerVitest extends BaseClass {
           elapsed: this.utils._formatTime(element[1].duration) || "",
           defects: "",
           version: "",
+          // add screenshot as attachment
+          attachments: [element[2].failScreenshotPath] || [],
         };
         testResults.push(data);
       }
