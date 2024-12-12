@@ -1,7 +1,7 @@
 const TestRail = require("@dlenroc/testrail");
-const TR_API = require("./testrailApi.js");
-const path = require("path");
 const schedule = require("node-schedule");
+const fs = require("fs");
+const path = require("path");
 const getLogger = require("./logger.js");
 const logger = getLogger();
 
@@ -147,7 +147,7 @@ class BaseClass {
           await this.tr_api
             .getResultsForRun(this.testrailConfigs.use_existing_run.id)
             .then((results) => {
-              logger.info("Results:\n", results);
+              logger.debug("Results:\n", results);
               results.forEach((res) => {
                 if (res.status_id != this.testrailConfigs.status.untested) {
                   result = result.filter(
@@ -183,20 +183,22 @@ class BaseClass {
      * It accepts the localResults representing the run test cases results
      * and the apiRes representing the test cases results from the TestRail.
      * */
-    logger.info("Uploading attachments to TestRail if any...");
     for (let i = 0; i < apiRes.length; i++) {
       let attachments = localResults[i].attachments;
       if (!attachments) {
         continue;
       }
       for (const attachment of attachments) {
-        await TR_API.addAttachmentToCase(
-          this.testrailConfigs.base_url,
-          this.testrailConfigs.user,
-          this.testrailConfigs.pass,
-          attachment,
-          apiRes[i].id
-        );
+        try {
+            logger.info(`Uploading "${attachment}" attachment.`);
+            const payload = {
+                name: path.basename(attachment),
+                value: fs.createReadStream(attachment),
+            };
+            await self.tr_api.addAttachmentToResult(apiRes[i].id, payload);
+        } catch (error) {
+            logger.warn(`Error uploading attachment: ${error.message}`);
+        }
       }
     }
   }
