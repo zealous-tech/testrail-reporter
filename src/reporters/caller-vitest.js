@@ -12,6 +12,7 @@ global.need_to_stop = false;
 let files_count = 0;
 let paths_count = 0;
 let runId = 0;
+let createRunResponse;
 let removedCaseIds = [];
 let existingCaseIds = [];
 let suiteCaseIds = [];
@@ -36,9 +37,15 @@ class CallerVitest extends BaseClass {
   async onCollected(file) {
     const setRunId = async () => {
       runId = this.testrailConfigs.use_existing_run.id;
-      await this.tr_api.getRun(runId).then(() => {
-        logger.info("The runId is a valid test run id!!");
-      });
+      await this.tr_api
+        .getRun(runId)
+        .then(() => {
+          logger.info("The runId is a valid test run id!!");
+        })
+        .catch((error) => {
+          logger.error(error.message);
+          throw error.message;
+        });
       logger.info(
         `The Run started, utilizing an existing TestRail Run` +
           `with "${runId}" id.`
@@ -80,12 +87,13 @@ class CallerVitest extends BaseClass {
 
     const addRunToTestRail = async () => {
       if (this.needToCreateRun) {
-        await this.addRunToTestRail(existingCaseIds)
-          .then(({ id }) => {
-            runId = id;
-            logger.info(`The Run created successfully with "${runId}" id.`);
-          })
-          .catch((err) => logger.error(err));
+        createRunResponse = await this.addRunToTestRail(existingCaseIds).catch(
+          (err) => {
+            logger.error(err.message);
+            throw err.message;
+          }
+        );
+        runId = createRunResponse.id;
       }
     };
 
