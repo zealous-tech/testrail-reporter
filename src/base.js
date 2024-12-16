@@ -13,6 +13,7 @@ const {
   pass,
   project_id,
   suite_id,
+  create_missing_cases,
   testRailUpdateInterval,
   updateResultAfterEachCase,
   use_existing_run,
@@ -34,6 +35,7 @@ class BaseClass {
       pass: pass,
       project_id: project_id,
       suite_id: suite_id,
+      create_missing_cases: create_missing_cases,
       testRailUpdateInterval: testRailUpdateInterval,
       updateResultAfterEachCase: updateResultAfterEachCase,
       use_existing_run: use_existing_run,
@@ -51,7 +53,7 @@ class BaseClass {
       this.testrailConfigs.testRailUpdateInterval <= 59
         ? `*/${this.testrailConfigs.testRailUpdateInterval} * * * * *`
         : `*/${Math.round(
-            this.testrailConfigs.testRailUpdateInterval / 60
+            this.testrailConfigs.testRailUpdateInterval / 60,
           )} * * * *`;
 
     // TODO: complete related functionality
@@ -60,6 +62,9 @@ class BaseClass {
     this.needToCreateRun = true;
 
     this.runURL = "";
+    this.missingCasesTitles = [];
+    this.createdCasesData = [];
+    this.newCasesOutputFile = "testrail_created_cases.json";
   }
 
   addRunToTestRail = async (case_ids) => {
@@ -101,7 +106,7 @@ class BaseClass {
     if (testRailResults.length === 0) {
       logger.warn(
         "No new results or added test cases" +
-          " to update in TestRail. Skipping..."
+          " to update in TestRail. Skipping...",
       );
       return;
     }
@@ -142,7 +147,8 @@ class BaseClass {
                 if (res.status_id != this.testrailConfigs.status.untested) {
                   result = result.filter(
                     (testCase) =>
-                      testCase.status_id !== this.testrailConfigs.status.skipped
+                      testCase.status_id !==
+                      this.testrailConfigs.status.skipped,
                   );
                 }
               });
@@ -180,17 +186,72 @@ class BaseClass {
       }
       for (const attachment of attachments) {
         try {
-            logger.info(`Uploading "${attachment}" attachment.`);
-            const payload = {
-                name: path.basename(attachment),
-                value: fs.createReadStream(attachment),
-            };
-            await this.tr_api.addAttachmentToResult(apiRes[i].id, payload);
+          logger.info(`Uploading "${attachment}" attachment.`);
+          const payload = {
+            name: path.basename(attachment),
+            value: fs.createReadStream(attachment),
+          };
+          await this.tr_api.addAttachmentToResult(apiRes[i].id, payload);
         } catch (error) {
-            logger.warn(`Error uploading attachment: ${error.message}`);
+          logger.warn(`Error uploading attachment: ${error.message}`);
         }
       }
     }
+  }
+
+  async addMissingCasesToTestSuite() {
+    if (
+      this.missingCasesTitles.length < 1 ||
+      !this.testrailConfigs.create_missing_cases
+    ) {
+      return;
+    }
+    logger.info("\nAdding missing test cases to TestRail suite");
+    let sections = await this.tr_api.getSections(
+      this.testrailConfigs.project_id,
+      {
+        suite_id: this.testrailConfigs.suite_id,
+      },
+    );
+    for (let title of this.missingCasesTitles) {
+      // check if the section does not contain the case and then add it
+      let caseId = await this.isCaseInSuite(title);
+      if (caseId) {
+        logger.warn(`\nCase already exists in suite: '${title}'`);
+        continue;
+      }
+      let createdCase = await this.tr_api.addCase(sections[0].id, {
+        title: title,
+      });
+      logger.info(`\nCase added to suite: '${title}'`);
+      this.createdCasesData.push({
+        id: createdCase.id,
+        title: createdCase.title,
+        section_id: createdCase.section_id,
+        suite_id: createdCase.suite_id,
+      });
+    }
+    this.writeCreatedCasesToFile();
+  }
+
+  async writeCreatedCasesToFile() {
+    if (this.createdCasesData.length > 0) {
+      fs.writeFileSync(
+        this.newCasesOutputFile,
+        JSON.stringify(this.createdCasesData, null, 2),
+      );
+      logger.info(`\n\nNew cases added to ${this.newCasesOutputFile}\n\n`);
+    }
+  }
+
+  async isCaseInSuite(title) {
+    let cases = await this.tr_api.getCases(this.testrailConfigs.project_id, {
+      suite_id: this.testrailConfigs.suite_id,
+    });
+    let caseIds = cases.map((item) => item.id);
+    let caseTitles = cases.map((item) => item.title);
+    let caseIndex = caseTitles.indexOf(title);
+    return caseIds[caseIndex];
   }
 
   startScheduler(runId) {
@@ -208,7 +269,7 @@ class BaseClass {
     const testRailResults = [];
     for (const result of testResults) {
       const existsInCopied = copiedTestResults.some(
-        (item) => item.case_id === result.case_id
+        (item) => item.case_id === result.case_id,
       );
       if (!existsInCopied) {
         copiedTestResults.push(result);
@@ -271,7 +332,7 @@ class BaseClass {
       logger.warn(
         `The provided TestRail suite does not contain` +
           ` any of the provided case ids.` +
-          ` No TestRail run will be created.`
+          ` No TestRail run will be created.`,
       );
       return false;
     }
