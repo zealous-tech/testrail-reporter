@@ -288,6 +288,45 @@ Replace '@C123' with the actual test ID from TestRail.
 > **Test steps are not supported in Vitest.**
 
 
+##### Schreenshots
+Need to have configured provider to capture screenshots for failed test cases.
+
+For instance, if you want to capture a screenshot when a test fails,
+you should include the following configuration in your config file (e.g., `vitest.config.js` or `vite.config.js`):
+
+```javascript
+export default defineConfig({
+
+...
+
+    test: {
+        environment: 'jsdom',
+        browser: {
+            enabled: true,
+            // browser name is required
+            name: '<browser>', // chromium, firefox, webkit
+            provider: 'playwright', // or 'webdriverio'
+            screenshotFailures: true,
+            // screenshots will be saved in this directory
+            screenshotDirectory: '<path>',
+        },
+    },
+
+...
+
+});
+```
+
+NOTE: regardless your provider choice, you should install the corresponding provider package.
+
+For more details about the provider installation visit <a href="https://vitest.dev/guide/browser/#provider-installation" target="_blank">Vitest documentation</a>.
+
+Vitest provider configuration is available in <a href="https://vitest.dev/guide/browser/#provider-configuration" target="_blank">Vitest documentation</a>.
+
+Generated screenshots will be available in testrail run tests' attachments.
+
+
+
 ##### Run your tests
 
 ```code
@@ -358,7 +397,7 @@ Differences between testrail-reporter and TestRail CLI (The TestRail CLI is a co
 | Adding Comment to the Results                          | Supported                           | Supported     |
 | Creating New Run                                       | Supported                           | Supported     |
 | Updating Existing Run                                  | Supported                           | Supported     |
-| Attaching Screenshots or Logs                          | Support is Currently in Development | Supported     |
+| Attaching Screenshots or Logs                          | Supported                           | Supported     |
 | Adding New Case to Existing Test Run                   | Support is Currently in Development | Supported     |
 | Adding New Case to Test Suite                          | Not supported                       | Supported     |
 

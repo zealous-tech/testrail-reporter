@@ -195,7 +195,7 @@ class BaseClass {
                 name: path.basename(attachment),
                 value: fs.createReadStream(attachment),
             };
-            await self.tr_api.addAttachmentToResult(apiRes[i].id, payload);
+            await this.tr_api.addAttachmentToResult(apiRes[i].id, payload);
         } catch (error) {
             logger.warn(`Error uploading attachment: ${error.message}`);
         }
