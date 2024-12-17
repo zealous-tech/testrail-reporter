@@ -4,6 +4,7 @@ module.exports = {
   pass: "MyPassword",
   project_id: 1,
   suite_id: 1,
+  create_missing_cases: true,
   testRailUpdateInterval: 0,
   updateResultAfterEachCase: false,
   use_existing_run: {
