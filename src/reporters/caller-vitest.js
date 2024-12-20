@@ -93,6 +93,8 @@ class CallerVitest extends BaseClass {
           }
         );
         runId = createRunResponse.id;
+        this.runURL = createRunResponse.url;
+        this.logRunURL();
       }
     };
 
@@ -168,8 +170,7 @@ class CallerVitest extends BaseClass {
       await this.updateTestRailResults(testResults, runId);
     }
     global.need_to_stop = true;
-    let runUrl = `${this.testrailConfigs.base_url}/index.php?/runs/view/${runId}`;
-    logger.info("TestRail Run URL:\n" + runUrl);
+    this.logRunURL();
   }
 
   processStartList(arr) {
