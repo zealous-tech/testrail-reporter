@@ -167,7 +167,10 @@ class CallerPlaywright extends BaseClass {
       }
       if (this.needToCreateRun) {
         createRunResponse = await this.addRunToTestRail(existingCaseIds).catch(
-          (err) => logger.error(err.message)
+          (err) => {
+            logger.error(err.message);
+            throw err;
+          }
         );
         runId = createRunResponse.id;
         this.runURL = createRunResponse.url;
@@ -175,13 +178,14 @@ class CallerPlaywright extends BaseClass {
       }
     }
     if (this.needToCreateRun) {
-        let getTestsResponse = await this.tr_api
-          .getTests(runId)
-          .catch((err) => logger.error(err.message));
-        testrailRunCaseIds = getTestsResponse.map((val) => val.case_id);
-        commonIds = testrailRunCaseIds.filter((id) =>
-          existingCaseIds.includes(id)
-        );
+      let getTestsResponse = await this.tr_api.getTests(runId).catch((err) => {
+        logger.error(err.message);
+        throw err;
+      });
+      testrailRunCaseIds = getTestsResponse.map((val) => val.case_id);
+      commonIds = testrailRunCaseIds.filter((id) =>
+        existingCaseIds.includes(id)
+      );
     }
     logger.debug("commonIds: ", commonIds);
 

@@ -1,0 +1,15 @@
+{
+  "name": "vitest",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "newRun": "vitest ./newRun.spec.js --config vitest.config.with-reporter.ts",
+    "e2eSmokeTests": "vitest ./tests/e2eSmokeTests.spec.js --config vitest.config.no-reporter.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "vitest": "^2.1.4"
+  }
+}
