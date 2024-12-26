@@ -88,7 +88,7 @@ class CallerPlaywright extends BaseClass {
         const case_details = self.utils._formatTitle(val.title);
         if (case_details != null) {
           case_ids.push(parseInt(case_details[1]));
-        } else {
+        } else if (self.testrailConfigs.create_missing_cases) {
           self.missingCasesTitles.push(val.title);
         }
       }
