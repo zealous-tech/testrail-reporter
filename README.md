@@ -407,7 +407,7 @@ To test the reporter, you can use the following steps:
 
 1. clone the repository
 2. run `npm install` to install the dependencies
-3. navigate to the `frameworks` folder
+3. navigate to the `test` folder
 4. choose the framework you want to test with
 
 ##### Playwright testing

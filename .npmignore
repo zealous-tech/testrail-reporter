@@ -1,6 +1,6 @@
 # standard ignores
 node_modules/
-# ignores test frameworks
-frameworks/
+# ignores test folder
+test/
 # ignores NOTICE
 NOTICE
