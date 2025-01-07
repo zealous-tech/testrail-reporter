@@ -85,21 +85,31 @@ class BaseClass {
       "Dec",
     ];
     const monthAbbreviation = monthNames[today.getMonth()];
-    return await this.tr_api.addRun(this.testrailConfigs.project_id, {
-      suite_id: this.testrailConfigs.suite_id,
-      milestone_id:
-        this.testrailConfigs.create_new_run.milestone_id !== 0
-          ? this.testrailConfigs.create_new_run.milestone_id
-          : undefined,
-      name:
-        `${this.testrailConfigs.create_new_run.run_name}` +
-        ` ${today.getDate()}-${monthAbbreviation}` +
-        `-${today.getFullYear()}` +
-        ` ${today.toTimeString().split(" ")[0]}`,
-      description: "TestRail automatic reporter module",
-      include_all: this.testrailConfigs.create_new_run.include_all,
-      case_ids: case_ids,
-    });
+    try {
+      const response = await this.tr_api.addRun(
+        this.testrailConfigs.project_id,
+        {
+          suite_id: this.testrailConfigs.suite_id,
+          milestone_id:
+            this.testrailConfigs.create_new_run.milestone_id !== 0
+              ? this.testrailConfigs.create_new_run.milestone_id
+              : undefined,
+          name:
+            `${this.testrailConfigs.create_new_run.run_name}` +
+            ` ${today.getDate()}-${monthAbbreviation}` +
+            `-${today.getFullYear()}` +
+            ` ${today.toTimeString().split(" ")[0]}`,
+          description: "TestRail automatic reporter module",
+          include_all: this.testrailConfigs.create_new_run.include_all,
+          case_ids: case_ids,
+        }
+      );
+      return response;
+    } catch (error) {
+      throw new Error(
+        `Failed to add run: ${error.message || "Unknown error occurred"}`
+      );
+    }
   };
 
   async updateTestRailResults(testRailResults, runId) {

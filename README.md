@@ -428,7 +428,13 @@ To test the reporter, you can use the following steps:
 6. run `npx playwright test` to run the tests
 
 ##### Vitest testing
-TBD
+
+1. navigate to the `vitest` folder
+2. run `npm install` to install the dependencies
+3. set your testrail configurations in the `testrail.config.js` file
+4. update the `vitest.config.ts` file if needed
+5. set log level in src/logger.js file to `debug` for more detailed logs
+6. run the tests using the appropriate script from the `package.json` file. For example `npm run e2eSmokeTests` or add your custom command
 
 
 ## License
