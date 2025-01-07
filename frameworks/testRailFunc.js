@@ -20,7 +20,7 @@ export class TestRailFunc {
       const run = await this.testrail.getRun(runID);
       return run;
     } catch (error) {
-      console.log("Error :::: ", error.message);
+      console.error("Error :::: ", error.message);
     }
   }
   // Retrieves all test runs for the current project
@@ -29,7 +29,7 @@ export class TestRailFunc {
       const runs = await this.testrail.getRuns(this.project_id);
       return runs;
     } catch (error) {
-      console.log("Error :::: ", error.message);
+      console.error("Error :::: ", error.message);
     }
   }
   // Deletes one or more test runs by their IDs
@@ -46,7 +46,7 @@ export class TestRailFunc {
       }
       return result;
     } catch (error) {
-      console.log("Error ::: ", error);
+      console.error("Error ::: ", error);
     }
   }
   // Retrieves all test cases for current suite
