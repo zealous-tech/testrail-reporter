@@ -62,6 +62,8 @@ module.exports = {
     pass: "password",
     project_id: 1,
     suite_id: 1,
+    create_missing_cases: true,
+    add_missing_cases_to_run: true,
     testRailUpdateInterval: 0,
     updateResultAfterEachCase: true,
     use_existing_run: {
@@ -99,6 +101,19 @@ module.exports = {
 - **`project_id and suite_id`**
 
     - Replace the values of project_id's and suite_id's with the corresponding values specific to your project..
+
+- **`create_missing_cases`** - Default is `true`
+
+    - If set to true, the reporter will collect test cases without TestRail case IDs in test title and create them in TestRail under given project and suite.
+        - After missing cases are created, the reporter will create/update `testrail_created_cases.json` file in the root directory of your project.
+            This file will contain the mapping of the test case title, TestRail case ID, section ID and suite ID.
+        - If the test case has a title that matches an existing test case in TestRail, the reporter will warn you about the existing case and will skip creating a new one.
+
+- **`add_missing_cases_to_run`** - Default is `true`
+
+    - If set to true, the reporter will perform the actions described in the `create_missing_cases` configuration.
+    - After missing cases are created(or recognized by title), the reporter will add them to the TestRun.
+    - Then it will set the test execution results for those cases in TestRun.
 
 - **`testRailUpdateInterval`** - Default is `0` (seconds).
 
@@ -398,8 +413,8 @@ Differences between testrail-reporter and TestRail CLI (The TestRail CLI is a co
 | Creating New Run                                       | Supported                           | Supported     |
 | Updating Existing Run                                  | Supported                           | Supported     |
 | Attaching Screenshots or Logs                          | Supported                           | Supported     |
+| Adding New Case to Test Suite                          | Supported                           | Supported     |
 | Adding New Case to Existing Test Run                   | Support is Currently in Development | Supported     |
-| Adding New Case to Test Suite                          | Not supported                       | Supported     |
 
 ## Self testing
 

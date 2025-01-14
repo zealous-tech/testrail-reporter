@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 const Utils = require("../utils.js");
 const process = require("process");
 const getLogger = require("../logger.js");
@@ -86,7 +86,11 @@ class CallerPlaywright extends BaseClass {
       // get the case ids from the suite
       for (const val of suite.allTests()) {
         const case_details = self.utils._formatTitle(val.title);
-        if (case_details != null) case_ids.push(parseInt(case_details[1]));
+        if (case_details != null) {
+          case_ids.push(parseInt(case_details[1]));
+        } else if (self.needToCollectMissingCases()) {
+          self.missingCasesTitles.push(val.title);
+        }
       }
       if (case_ids.length == 0) {
         logger.warn("No tests found marked for TestRail reporting.");
@@ -111,7 +115,7 @@ class CallerPlaywright extends BaseClass {
             `Failed to get test cases from project by` +
               ` "${configProjectId}" id` +
               ` and suite by "${configSuiteId}" id.` +
-              ` \nPlease check your TestRail configuration.`
+              ` \nPlease check your TestRail configuration.`,
           );
           logger.error(err);
           // TODO: reffer to the base.js needToCreateRun variable
@@ -141,27 +145,26 @@ class CallerPlaywright extends BaseClass {
     logger.info("Running tests amount: ", runningTestsAmount);
     await getCaseIds(this);
     await getTRcases(this);
-    // logger.debug('suiteCaseIds: ', trCaseIds)
     removedCaseIds = case_ids.filter((item) => !trCaseIds.includes(item));
     await getExistingCaseIds(trCaseIds);
     this.needToCreateRun = this.needNewRun(
       case_ids,
       existingCaseIds,
-      removedCaseIds
+      removedCaseIds,
     );
     if (this.testrailConfigs.use_existing_run.id != 0) {
       // TODO: add catch block
       runId = await this.testrailConfigs.use_existing_run.id;
       logger.info(
         `The Run started, utilizing an existing TestRail Run` +
-          ` with "${runId}" id.`
+          ` with "${runId}" id.`,
       );
     } else {
       if (removedCaseIds.length > 0) {
         if (this.needToCreateRun) {
           logger.warn(
             `The provided TestRail suite does not contain` +
-              ` the following case ids: [${removedCaseIds}]`
+              ` the following case ids: [${removedCaseIds}]`,
           );
         }
       }
@@ -170,9 +173,10 @@ class CallerPlaywright extends BaseClass {
           (err) => {
             logger.error(err.message);
             throw err;
-          }
+          },
         );
         runId = createRunResponse.id;
+        this.runId = runId;
         this.runURL = createRunResponse.url;
         this.logRunURL();
       }
@@ -184,10 +188,9 @@ class CallerPlaywright extends BaseClass {
       });
       testrailRunCaseIds = getTestsResponse.map((val) => val.case_id);
       commonIds = testrailRunCaseIds.filter((id) =>
-        existingCaseIds.includes(id)
+        existingCaseIds.includes(id),
       );
     }
-    logger.debug("commonIds: ", commonIds);
 
     if (
       this.testrailConfigs.testRailUpdateInterval != 0 &&
@@ -196,6 +199,8 @@ class CallerPlaywright extends BaseClass {
       this.startScheduler(runId);
     }
     onBeginCompleted = true;
+    await this.addMissingCasesToTestSuite();
+    await this.addMissingCasesToRun();
     logger.debug("onBegin end\n\n");
   }
 
@@ -233,8 +238,8 @@ class CallerPlaywright extends BaseClass {
         try {
           logger.info(`Uploading "${attachment}" attachment.`);
           const payload = {
-              name: path.basename(attachment),
-              value: fs.createReadStream(attachment),
+            name: path.basename(attachment),
+            value: fs.createReadStream(attachment),
           };
           await self.tr_api.addAttachmentToResult(runTestId, payload);
         } catch (error) {
@@ -266,11 +271,15 @@ class CallerPlaywright extends BaseClass {
     }
 
     function informMissingCaseIfNeed(self, caseId) {
-      if (!testrailRunCaseIds.includes(+caseId) && self.needToCreateRun) {
+      if (
+        !testrailRunCaseIds.includes(+caseId) &&
+        !self.missingCasesIds.includes(+caseId) &&
+        self.needToCreateRun
+      ) {
         logger.warn(
           `Test case with "${+caseId}" id doesn't exist` +
             ` in TestRail run with "${runId}" id.` +
-            ` Please check your TestRail run/suite.`
+            ` Please check your TestRail run/suite.`,
         );
       }
     }
@@ -302,11 +311,19 @@ class CallerPlaywright extends BaseClass {
     await waitForTest(test.id);
     logger.debug("onTestEnd: ", test.title);
 
-    const case_id = this.utils._formatTitle(test.title);
+    let case_id = this.utils._formatTitle(test.title);
+    if (case_id == null) {
+      // try to update the test title in case of missing test case
+      test.title = await this.updateMissingCaseTitle(test.title);
+      case_id = this.utils._formatTitle(test.title);
+    }
     if (case_id) {
       informMissingCaseIfNeed(this, +case_id[1]);
       const caseData = await constructCaseData(this, case_id);
-      if (testrailRunCaseIds.includes(+case_id[1])) {
+      if (
+        testrailRunCaseIds.includes(+case_id[1]) ||
+        this.needToCollectMissingCases()
+      ) {
         testResults.push(caseData);
       }
       await updateRunIfNeeded(this, caseData);
@@ -324,7 +341,7 @@ class CallerPlaywright extends BaseClass {
      *
      * NOTES:
      * - this hook is called only once after all the tests are done,
-     *   but in some cases, it might be called when the last tets reult
+     *   but in some cases, it might be called when the last test reult
      *   is not yet updated in the TestRail run. Thus, the reporter
      *   should wait based on conditions:
      *      - there is at least one test result in the testResults array
@@ -342,7 +359,7 @@ class CallerPlaywright extends BaseClass {
               "There is a problem with the test execution." +
                 " The test execution is taking too long." +
                 " Make sure there is no internet connection issue." +
-                " Exiting..."
+                " Exiting...",
             );
             break;
           }
@@ -379,6 +396,7 @@ class CallerPlaywright extends BaseClass {
     }
 
     this.logRunURL();
+    logger.debug(JSON.stringify(testResults, null, 2));
   }
 
   sanitizeString(str) {
@@ -396,7 +414,7 @@ class CallerPlaywright extends BaseClass {
       //     `TestRail case steps:\n${JSON.stringify(testRailCaseSteps, null, 2)}\n`
       // );
       const resultSteps = result.steps.filter(
-        (step) => step.category === "test.step"
+        (step) => step.category === "test.step",
       );
       const stepsDoMatch = testRailCaseSteps.length === resultSteps.length;
       for (let index = 0; index < testRailCaseSteps.length; index++) {
@@ -449,7 +467,7 @@ class CallerPlaywright extends BaseClass {
       }
     } else {
       logger.warn(
-        `Test case with "${caseId}" id doesn't have custom steps in TestRail`
+        `Test case with "${caseId}" id doesn't have custom steps in TestRail`,
       );
     }
   }
