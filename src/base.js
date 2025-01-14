@@ -105,12 +105,12 @@ class BaseClass {
           description: "TestRail automatic reporter module",
           include_all: this.testrailConfigs.create_new_run.include_all,
           case_ids: case_ids,
-        }
+        },
       );
       return response;
     } catch (error) {
       throw new Error(
-        `Failed to add run: ${error.message || "Unknown error occurred"}`
+        `Failed to add run: ${error.message || "Unknown error occurred"}`,
       );
     }
   };
@@ -409,11 +409,13 @@ class BaseClass {
      * Returns true if the TestRail run needs to be created.
      * */
     if (removedCaseIds == case_ids || existingCaseIds.length == 0) {
-      logger.warn(
-        `The provided TestRail suite does not contain` +
-          ` any of the provided case ids.` +
-          ` No TestRail run will be created.`,
-      );
+      const warning =
+        "The provided TestRail suite does not contain any of the provided case ids.";
+      if (this.testrailConfigs.add_missing_cases_to_run) {
+        logger.warn(warning);
+        return true;
+      }
+      logger.warn(warning + " No TestRail run will be created.");
       return false;
     }
     return true;
