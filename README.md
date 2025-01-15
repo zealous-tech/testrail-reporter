@@ -101,7 +101,7 @@ module.exports = {
 
     - Replace the values of project_id's and suite_id's with the corresponding values specific to your project..
 
-- **`create_missing_cases`** - Default is `true`
+- **`create_missing_cases`** - Default is `false`
 
     - If set to true, the reporter will collect test cases without TestRail case IDs in test title and create them in TestRail under given project and suite.
         - After missing cases are created, the reporter will create/update `testrail_created_cases.json` file in the root directory of your project.
