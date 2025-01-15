@@ -63,7 +63,7 @@ class CallerVitest extends BaseClass {
             `Failed to get test cases from project by` +
               `" ${configProjectId}" id` +
               ` and suite by "${configSuiteId}" id.` +
-              ` \nPlease check your TestRail configuration.`
+              ` \nPlease check your TestRail configuration.`,
           );
           logger.error(err);
           process.exit(1);
@@ -78,7 +78,7 @@ class CallerVitest extends BaseClass {
         if (this.needToCreateRun) {
           logger.warn(
             `The provided TestRail suite does not contain` +
-              ` the following case ids: [${removedCaseIds}]`
+              ` the following case ids: [${removedCaseIds}]`,
           );
         }
       }
@@ -102,23 +102,25 @@ class CallerVitest extends BaseClass {
     files_count++;
     this.processStartList(file);
     if (files_count === paths_count) {
+      await this.addMissingCasesToTestSuite();
       if (this.testrailConfigs.use_existing_run.id !== 0) {
         await setRunId();
       } else {
         await getSuiteCaseIds();
         logger.debug("suiteCaseIds: ", suiteCaseIds);
         removedCaseIds = case_ids.filter(
-          (item) => !suiteCaseIds.includes(item)
+          (item) => !suiteCaseIds.includes(item),
         );
         logger.debug("removedCaseIds: ", removedCaseIds);
         existingCaseIds = case_ids.filter((item) =>
-          suiteCaseIds.includes(item)
+          suiteCaseIds.includes(item),
         );
         logger.debug("existingCaseIds: ", existingCaseIds);
+
         this.needToCreateRun = this.needNewRun(
           case_ids,
           existingCaseIds,
-          removedCaseIds
+          removedCaseIds,
         );
         informAboutMissingCases();
         await addRunToTestRail();
@@ -143,7 +145,7 @@ class CallerVitest extends BaseClass {
             ? `#Error message:#\n ${JSON.stringify(
                 element[1].errors[0].message,
                 null,
-                "\t"
+                "\t",
               )}\n`
             : "PASS";
         const data = {
@@ -181,6 +183,8 @@ class CallerVitest extends BaseClass {
         const case_id = this.utils._formatTitle(element.name);
         if (case_id != null) {
           case_ids.push(parseInt(case_id[1]));
+        } else if (self.testrailConfigs.create_missing_cases) {
+          this.missingCasesTitles.push(element.name);
         }
         if (element.mode === "skip") {
           if (case_id && case_id[1]) {
