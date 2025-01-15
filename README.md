@@ -44,7 +44,7 @@ The reporter supports the following features
 To install [testrail-reporter](https://www.npmjs.com/package/@zealteam/testrail-reporter?activeTab=readme), use the following command:
 
 ```code
- npm install @zealteam/testrail-reporter
+ npm install @zealteam/testrail-reporter --save-dev
 ```
 
 ## TestRail Configuration
