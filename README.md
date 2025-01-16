@@ -37,7 +37,7 @@ The reporter supports the following features
 - Update the test run results in TestRail either after running all test cases or simultaneously.
 - You have an option to update the test results of the same test run which executed several times, by saving all history data. Or you can create a new test run for every execution.
 - If a test case fails, you can observe an error message in the comment field of the TestRail test result.
-- Supports screenshots and videos attachment to the test results for Playwright.
+- Supports screenshots and videos attachment to the test results for Playwright and only screenshots for Vitest.
 
 ## Installation
 
@@ -51,7 +51,7 @@ To install [testrail-reporter](https://www.npmjs.com/package/@zealteam/testrail-
 
 You should Enable API and Enable session authentication for API from testrail settings(It can be enabled in the administration area in TestRail under Administration > Site Settings > API.)
 
-Also make sure that your TestRail project uses multiple test suites to manage cases. As of now we support only projects which uses suites.
+There are no specific requirements for the TestRail project, we support all three types.
 
 Create a `testrail.config.js` file in your project's root directory. Enter the following credentials in the file:
 
