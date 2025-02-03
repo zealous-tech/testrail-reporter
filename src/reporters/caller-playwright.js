@@ -88,7 +88,7 @@ class CallerPlaywright extends BaseClass {
         const case_details = self.utils._formatTitle(val.title);
         if (case_details != null) {
           case_ids.push(parseInt(case_details[1]));
-        } else if (self.testrailConfigs.create_missing_cases) {
+        } else if (self.needToCollectMissingCases()) {
           self.missingCasesTitles.push(val.title);
         }
       }
@@ -145,8 +145,6 @@ class CallerPlaywright extends BaseClass {
     logger.info("Running tests amount: ", runningTestsAmount);
     await getCaseIds(this);
     await getTRcases(this);
-    await this.addMissingCasesToTestSuite();
-    // logger.debug('suiteCaseIds: ', trCaseIds)
     removedCaseIds = case_ids.filter((item) => !trCaseIds.includes(item));
     await getExistingCaseIds(trCaseIds);
     this.needToCreateRun = this.needNewRun(
@@ -178,6 +176,7 @@ class CallerPlaywright extends BaseClass {
           },
         );
         runId = createRunResponse.id;
+        this.runId = runId;
         this.runURL = createRunResponse.url;
         this.logRunURL();
       }
@@ -192,7 +191,6 @@ class CallerPlaywright extends BaseClass {
         existingCaseIds.includes(id),
       );
     }
-    logger.debug("commonIds: ", commonIds);
 
     if (
       this.testrailConfigs.testRailUpdateInterval != 0 &&
@@ -201,6 +199,8 @@ class CallerPlaywright extends BaseClass {
       this.startScheduler(runId);
     }
     onBeginCompleted = true;
+    await this.addMissingCasesToTestSuite();
+    await this.addMissingCasesToRun();
     logger.debug("onBegin end\n\n");
   }
 
@@ -271,7 +271,11 @@ class CallerPlaywright extends BaseClass {
     }
 
     function informMissingCaseIfNeed(self, caseId) {
-      if (!testrailRunCaseIds.includes(+caseId) && self.needToCreateRun) {
+      if (
+        !testrailRunCaseIds.includes(+caseId) &&
+        !self.missingCasesIds.includes(+caseId) &&
+        self.needToCreateRun
+      ) {
         logger.warn(
           `Test case with "${+caseId}" id doesn't exist` +
             ` in TestRail run with "${runId}" id.` +
@@ -307,11 +311,19 @@ class CallerPlaywright extends BaseClass {
     await waitForTest(test.id);
     logger.debug("onTestEnd: ", test.title);
 
-    const case_id = this.utils._formatTitle(test.title);
+    let case_id = this.utils._formatTitle(test.title);
+    if (case_id == null) {
+      // try to update the test title in case of missing test case
+      test.title = await this.updateMissingCaseTitle(test.title);
+      case_id = this.utils._formatTitle(test.title);
+    }
     if (case_id) {
       informMissingCaseIfNeed(this, +case_id[1]);
       const caseData = await constructCaseData(this, case_id);
-      if (testrailRunCaseIds.includes(+case_id[1])) {
+      if (
+        testrailRunCaseIds.includes(+case_id[1]) ||
+        this.needToCollectMissingCases()
+      ) {
         testResults.push(caseData);
       }
       await updateRunIfNeeded(this, caseData);
@@ -329,7 +341,7 @@ class CallerPlaywright extends BaseClass {
      *
      * NOTES:
      * - this hook is called only once after all the tests are done,
-     *   but in some cases, it might be called when the last test reult
+     *   but in some cases, it might be called when the last test result
      *   is not yet updated in the TestRail run. Thus, the reporter
      *   should wait based on conditions:
      *      - there is at least one test result in the testResults array
@@ -384,6 +396,7 @@ class CallerPlaywright extends BaseClass {
     }
 
     this.logRunURL();
+    logger.debug(JSON.stringify(testResults, null, 2));
   }
 
   sanitizeString(str) {

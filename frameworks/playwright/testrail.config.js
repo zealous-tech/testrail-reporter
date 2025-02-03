@@ -5,6 +5,7 @@ module.exports = {
   project_id: 1,
   suite_id: 1,
   create_missing_cases: true,
+  add_missing_cases_to_run: true,
   testRailUpdateInterval: 0,
   updateResultAfterEachCase: false,
   use_existing_run: {
@@ -13,7 +14,7 @@ module.exports = {
   create_new_run: {
     include_all: false,
     run_name: "Test Run",
-    milestone_id: 0
+    milestone_id: 0,
   },
   status: {
     passed: 1,
@@ -22,6 +23,6 @@ module.exports = {
     pending: 4,
     skipped: 6,
     expFail: 7,
-    fixed: 9
-  }
+    fixed: 9,
+  },
 };

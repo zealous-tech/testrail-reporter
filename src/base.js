@@ -14,6 +14,7 @@ const {
   project_id,
   suite_id,
   create_missing_cases,
+  add_missing_cases_to_run,
   testRailUpdateInterval,
   updateResultAfterEachCase,
   use_existing_run,
@@ -36,6 +37,7 @@ class BaseClass {
       project_id: project_id,
       suite_id: suite_id,
       create_missing_cases: create_missing_cases,
+      add_missing_cases_to_run: add_missing_cases_to_run,
       testRailUpdateInterval: testRailUpdateInterval,
       updateResultAfterEachCase: updateResultAfterEachCase,
       use_existing_run: use_existing_run,
@@ -63,6 +65,7 @@ class BaseClass {
 
     this.runURL = "";
     this.missingCasesTitles = [];
+    this.missingCasesIds = [];
     this.createdCasesData = [];
     this.newCasesOutputFile = "testrail_created_cases.json";
   }
@@ -102,12 +105,12 @@ class BaseClass {
           description: "TestRail automatic reporter module",
           include_all: this.testrailConfigs.create_new_run.include_all,
           case_ids: case_ids,
-        }
+        },
       );
       return response;
     } catch (error) {
       throw new Error(
-        `Failed to add run: ${error.message || "Unknown error occurred"}`
+        `Failed to add run: ${error.message || "Unknown error occurred"}`,
       );
     }
   };
@@ -121,6 +124,9 @@ class BaseClass {
       return;
     }
     logger.info(`Adding run results(${testRailResults.length}) to TestRail`);
+    logger.debug(
+      `\ntestRailResults: ${JSON.stringify(testRailResults, null, 2)}`,
+    );
     let result;
     await this.tr_api
       .getCases(this.testrailConfigs.project_id, {
@@ -167,6 +173,7 @@ class BaseClass {
         const res = {
           results: result,
         };
+        logger.debug("\nResults to be added:\n", result);
         await this.tr_api
           .addResultsForCases(runId, res)
           .then(async (apiRes) => {
@@ -209,6 +216,13 @@ class BaseClass {
     }
   }
 
+  needToCollectMissingCases() {
+    return (
+      this.testrailConfigs.create_missing_cases ||
+      this.testrailConfigs.add_missing_cases_to_run
+    );
+  }
+
   async addMissingCasesToTestSuite() {
     if (this.missingCasesTitles.length < 1) {
       return;
@@ -222,9 +236,12 @@ class BaseClass {
     );
     for (let title of this.missingCasesTitles) {
       // check if the section does not contain the case and then add it
-      let caseId = await this.isCaseInSuite(title);
+      let caseId = await this.getCaseIdByTitle(title);
       if (caseId) {
-        logger.warn(`\nCase already exists in suite: '${title}'`);
+        logger.warn(
+          `\nCase already exists in suite:\nid: ${caseId}\ntitle: '${title}'`,
+        );
+        this.missingCasesIds.push(caseId);
         continue;
       }
       let createdCase = await this.tr_api.addCase(sections[0].id, {
@@ -237,8 +254,59 @@ class BaseClass {
         section_id: createdCase.section_id,
         suite_id: createdCase.suite_id,
       });
+      this.missingCasesIds.push(createdCase.id);
     }
     this.writeCreatedCasesToFile();
+  }
+
+  async addMissingCasesToRun() {
+    /*
+     * This method adds the missing test cases to the TestRail run.
+     * The missing cases should be created in the TestRail suite beforehand,
+     * which data is stored in the 'missingCasesIds' array.
+     * It gets the existing cases in the run
+     * and updates the run with the new cases.
+     * */
+    if (
+      this.missingCasesIds.length < 1 ||
+      !this.testrailConfigs.add_missing_cases_to_run
+    ) {
+      return;
+    }
+
+    logger.info("\nAdding missing test cases to TestRail run");
+    try {
+      const existingCases = await this.tr_api.getTests(this.runId);
+      const existingCaseIds = existingCases.map((item) => item.case_id);
+      const updatedCaseIds = Array.from(
+        new Set([...existingCaseIds, ...this.missingCasesIds]),
+      );
+      const payload = {
+        case_ids: updatedCaseIds,
+      };
+      await this.tr_api.updateRun(this.runId, payload);
+      logger.info("\nTest run updated successfully\n");
+    } catch (error) {
+      logger.error("\nFailed to update the test run:\n", error);
+    }
+  }
+
+  async updateMissingCaseTitle(title) {
+    /*
+     * This method updates the missing case title if needed.
+     * I.e. if the corresponding configuration is done in the testrail.config.js,
+     * the newly created test cases titles should be updated in executed test's
+     * data object.
+     * Otherwise, the test case title will be returned as it is.
+     * */
+    if (this.testrailConfigs.add_missing_cases_to_run) {
+      // get case id by title from already created cases data
+      let caseId = await this.getCaseIdByTitle(title);
+      if (caseId) {
+        return `@C${caseId} ${title}`;
+      }
+    }
+    return title;
   }
 
   async writeCreatedCasesToFile() {
@@ -251,7 +319,12 @@ class BaseClass {
     }
   }
 
-  async isCaseInSuite(title) {
+  async getCaseIdByTitle(title) {
+    /*
+     * This method returns the case id by the case title.
+     * To get it need to have the project_id and suite_id.
+     * If the case is not found, it will return null.
+     * */
     let cases = await this.tr_api.getCases(this.testrailConfigs.project_id, {
       suite_id: this.testrailConfigs.suite_id,
     });
@@ -336,11 +409,13 @@ class BaseClass {
      * Returns true if the TestRail run needs to be created.
      * */
     if (removedCaseIds == case_ids || existingCaseIds.length == 0) {
-      logger.warn(
-        `The provided TestRail suite does not contain` +
-          ` any of the provided case ids.` +
-          ` No TestRail run will be created.`,
-      );
+      const warning =
+        "The provided TestRail suite does not contain any of the provided case ids.";
+      if (this.testrailConfigs.add_missing_cases_to_run) {
+        logger.warn(warning);
+        return true;
+      }
+      logger.warn(warning + " No TestRail run will be created.");
       return false;
     }
     return true;

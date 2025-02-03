@@ -183,7 +183,7 @@ class CallerVitest extends BaseClass {
         const case_id = this.utils._formatTitle(element.name);
         if (case_id != null) {
           case_ids.push(parseInt(case_id[1]));
-        } else if (self.testrailConfigs.create_missing_cases) {
+        } else if (this.needToCollectMissingCases()) {
           this.missingCasesTitles.push(element.name);
         }
         if (element.mode === "skip") {
