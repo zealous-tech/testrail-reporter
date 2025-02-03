@@ -102,14 +102,14 @@ module.exports = {
 
     - Replace the values of project_id's and suite_id's with the corresponding values specific to your project..
 
-- **`create_missing_cases`** - Default is `true`
+- **`create_missing_cases`** - Default is `false`
 
     - If set to true, the reporter will collect test cases without TestRail case IDs in test title and create them in TestRail under given project and suite.
         - After missing cases are created, the reporter will create/update `testrail_created_cases.json` file in the root directory of your project.
             This file will contain the mapping of the test case title, TestRail case ID, section ID and suite ID.
         - If the test case has a title that matches an existing test case in TestRail, the reporter will warn you about the existing case and will skip creating a new one.
 
-- **`add_missing_cases_to_run`** - Default is `true`
+- **`add_missing_cases_to_run`** - Default is `false`
 
     - If set to true, the reporter will perform the actions described in the `create_missing_cases` configuration.
     - After missing cases are created(or recognized by title), the reporter will add them to the TestRun.

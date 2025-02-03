@@ -341,7 +341,7 @@ class CallerPlaywright extends BaseClass {
      *
      * NOTES:
      * - this hook is called only once after all the tests are done,
-     *   but in some cases, it might be called when the last test reult
+     *   but in some cases, it might be called when the last test result
      *   is not yet updated in the TestRail run. Thus, the reporter
      *   should wait based on conditions:
      *      - there is at least one test result in the testResults array
