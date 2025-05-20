@@ -1,4 +1,4 @@
-const regex = /C([?\d]{1,9})/;
+const regex = /C(\d{1,9})/g;
 
 class Utils {
   _formatTime(ms) {
@@ -22,9 +22,15 @@ class Utils {
     return `${s}s`;
   }
 
-  _formatTitle(title) {
-    let _t = title.match(regex);
-    return _t;
+  _extractCaseIdsFromTitle(title) {
+    const matches = [];
+    let match;
+    while ((match = regex.exec(title)) !== null) {
+      if (match[1]) {
+        matches.push(parseInt(match[1]));
+      }
+    }
+    return matches;
   }
 }
 
