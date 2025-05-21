@@ -18,7 +18,7 @@ This document provides detailed instructions on how to use the `import_data_to_t
    > **Note**: API key can be generated from TestRail under `My Settings > API Key` (https://your-instance.testrail.io/index.php?%2Fmysettings=#).
 4. **Configuration Loader**: Ensure the `dotenv` package is installed to load environment variables. Run:
    ```bash
-   npm install dotenv
+   npm install
    ```
 
 ---

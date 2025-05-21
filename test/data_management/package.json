@@ -1,0 +1,14 @@
+{
+  "name": "data_management",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {},
+  "author": "",
+  "license": "MIT",
+  "description": "",
+  "dependencies": {},
+  "devDependencies": {
+    "@dlenroc/testrail": "^1.9.1",
+    "dotenv": "^16.4.7"
+  }
+}
