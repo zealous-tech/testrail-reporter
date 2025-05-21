@@ -1,6 +1,6 @@
 {
   "name": "@zealteam/testrail-reporter",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "A custom reporter for Vitest, Jest, and Playwright designed to synchronize with Testrail.",
   "author": "Davit Manukyan <davit_m@zealous.tech>",
   "repository": {
@@ -42,7 +42,8 @@
     "@playwright/test": "^1.40.1",
     "log4js": "^6.9.1",
     "node-schedule": "^2.1.1",
-    "vitest": "^1.6.0"
+    "playwright": "^1.40.1",
+    "vitest": "^3.0.5"
   },
   "devDependencies": {
     "@types/node": "^20.12.11",
