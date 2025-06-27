@@ -148,17 +148,22 @@ class CallerVitest extends BaseClass {
                 "\t",
               )}\n`
             : "PASS";
-        const data = {
-          case_id: +case_id,
-          status_id,
-          comment,
-          elapsed: this.utils._formatTime(element[1].duration) || "",
-          defects: "",
-          version: "",
-          // add screenshot as attachment
-          attachments: [element[2].failScreenshotPath] || [],
-        };
-        testResults.push(data);
+
+        case_id.forEach((item) => 
+        {
+            const data = 
+            {
+              case_id: item,
+              status_id,
+              comment,
+              elapsed: this.utils._formatTime(element[1].duration) || "",
+              defects: "",
+              version: "",
+              // add screenshot as attachment
+              attachments: [element[2].failScreenshotPath] || [],
+            };
+          testResults.push(data);
+        })
       }
     });
   }
@@ -180,9 +185,13 @@ class CallerVitest extends BaseClass {
       if (!element.name.match(/[@C][?\d]{1,8}$/gm) && element.tasks) {
         this.processStartList(element.tasks);
       } else {
-        const case_id = this.utils._formatTitle(element.name);
-        if (case_id != null) {
-          case_ids.push(parseInt(case_id[1]));
+        const case_id = this.utils._extractCaseIdsFromTitle(element.name);
+        if (case_id != null) 
+        {
+          case_id.forEach((item) => 
+          {             
+            case_ids.push(item) 
+          })
         } else if (self.testrailConfigs.create_missing_cases) {
           this.missingCasesTitles.push(element.name);
         }
@@ -201,7 +210,7 @@ class CallerVitest extends BaseClass {
           testResults.push(data);
         } else {
           if (case_id) {
-            startList[element.id] = +case_id[1];
+            startList[element.id] = case_id.map((id) => +id);
           }
         }
       }
