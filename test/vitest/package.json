@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "gTests": "vitest ./g_my_tests.spec.js --config vitest.config.with-reporter.ts",
     "newRun": "vitest ./newRun.spec.js --config vitest.config.with-reporter.ts",
     "e2eSmokeTests": "vitest ./tests/e2eSmokeTests.spec.js --config vitest.config.no-reporter.ts"
   },
