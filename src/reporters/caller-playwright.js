@@ -38,8 +38,6 @@ let minDelay = 1000;
 /* flags for hooks */
 let onBeginCompleted = false;
 // amount of all test cases that are currently running
-let runningTestsAmount = 0;
-let completedTestsAmount = 0;
 
 // Variable representing all test cases that are currently running
 let testQueue = [];
@@ -47,6 +45,8 @@ let testQueue = [];
 // if the updateResultAfterEachCase is set to true.
 // This should be equal to the testResults array length once the test run ends.
 let updatedTestsAmount = 0;
+let executingTestCaseCount = new Array()
+let executedTestCaseCount = new Array()
 
 async function waitForBegin() {
   // wait for the onBegin hook to complete
@@ -64,7 +64,8 @@ async function waitForTest(testId) {
 
 async function waitForAllTestsEnd() {
   // wait for all the tests to be completed
-  while (completedTestsAmount != runningTestsAmount) {
+  while (executingTestCaseCount.length != executedTestCaseCount.length) 
+  {
     await setTimeout(minDelay);
   }
 }
@@ -141,8 +142,6 @@ class CallerPlaywright extends BaseClass {
     logger.debug("onBegin");
     let customStepsMap = {};
     logger.info("The reporter started successfully");
-    runningTestsAmount = suite.allTests().length;
-    logger.info("Running tests amount: ", runningTestsAmount);
     await getCaseIds(this);
     await getTRcases(this);
     await this.addMissingCasesToTestSuite();
@@ -212,6 +211,7 @@ class CallerPlaywright extends BaseClass {
     await waitForBegin();
     logger.debug("onTestBegin: ", test.title);
     testQueue.push(test.id);
+    executingTestCaseCount.push(test.id)
   }
 
   async onTestEnd(test, result) {
@@ -304,6 +304,7 @@ class CallerPlaywright extends BaseClass {
 
     await waitForBegin();
     await waitForTest(test.id);
+    executedTestCaseCount.push(test.id)
     logger.debug("onTestEnd: ", test.title);
 
     const all_ids = this.utils._extractCaseIdsFromTitle(test.title);
@@ -318,7 +319,6 @@ class CallerPlaywright extends BaseClass {
           await updateRunIfNeeded(this, caseData);
       }
     }
-    completedTestsAmount += 1;
     // remove the test id from the testQueue
     testQueue = testQueue.filter((item) => item !== test.id);
   }
@@ -343,7 +343,7 @@ class CallerPlaywright extends BaseClass {
     async function waitForAllUpdates(self) {
       if (self.testrailConfigs.updateResultAfterEachCase) {
         let timeout = 0;
-        while (updatedTestsAmount != commonIds.length) {
+        while (updatedTestsAmount != executedTestCaseCount.length) {
           if (timeout == allCasesUpdateTimeout) {
             logger.error(
               "There is a problem with the test execution." +
@@ -384,7 +384,6 @@ class CallerPlaywright extends BaseClass {
     ) {
       await this.updateCurrentResults(runId);
     }
-
     this.logRunURL();
   }
 
