@@ -14,6 +14,7 @@ const {
   project_id,
   suite_id,
   create_missing_cases,
+  add_missing_cases_to_run,
   testRailUpdateInterval,
   updateResultAfterEachCase,
   use_existing_run,
@@ -35,6 +36,7 @@ class BaseClass {
       pass: pass,
       project_id: project_id,
       suite_id: suite_id,
+      add_missing_cases_to_run: add_missing_cases_to_run,
       create_missing_cases: create_missing_cases,
       testRailUpdateInterval: testRailUpdateInterval,
       updateResultAfterEachCase: updateResultAfterEachCase,
@@ -60,11 +62,20 @@ class BaseClass {
     // this variable is used to decide
     // if we need to create a new run in TestRail
     this.needToCreateRun = true;
-
     this.runURL = "";
+
     this.missingCasesTitles = [];
+    this.missingCasesIds = [];
     this.createdCasesData = [];
     this.newCasesOutputFile = "testrail_created_cases.json";
+  }
+
+   needToCollectMissingCases() 
+   {
+      return (
+        this.testrailConfigs.create_missing_cases ||
+        this.testrailConfigs.add_missing_cases_to_run
+      );
   }
 
   addRunToTestRail = async (case_ids) => {
@@ -239,6 +250,29 @@ class BaseClass {
       });
     }
     this.writeCreatedCasesToFile();
+  }
+
+  async addMissingCasesToRun(runId, allTestCasesId) 
+  {
+    if (!this.testrailConfigs.add_missing_cases_to_run ) 
+    {
+      return;
+    }
+
+    logger.info("\nAdding missing test cases to TestRail run");
+    try 
+    {
+      const payload = 
+      {
+        case_ids: allTestCasesId,
+      };
+      await this.tr_api.updateRun(runId, payload);
+      logger.info("\nTest run updated successfully\n");
+    } 
+    catch (error) 
+    {
+      logger.error("\nFailed to update the test run:\n", error);
+    }
   }
 
   async writeCreatedCasesToFile() {

@@ -84,12 +84,14 @@ class CallerPlaywright extends BaseClass {
      * */
 
     async function getCaseIds(self) {
+      const all_case_ids = []
       // get the case ids from the suite
       for (const val of suite.allTests()) {
         const all_ids = self.utils._extractCaseIdsFromTitle(val.title);
+        all_case_ids.push(...all_ids)
         if (all_ids.length > 0) {
           case_ids.push(...all_ids);
-        } else if (self.testrailConfigs.create_missing_cases) {
+        } else if (self.needToCollectMissingCases()) {
           self.missingCasesTitles.push(val.title);
         }
       }
@@ -98,6 +100,7 @@ class CallerPlaywright extends BaseClass {
       } else {
         logger.info("Found these test case ids marked for TestRun: ", case_ids);
       }
+      return all_case_ids
     }
 
     async function getTRcases(self) {
@@ -142,9 +145,11 @@ class CallerPlaywright extends BaseClass {
     logger.debug("onBegin");
     let customStepsMap = {};
     logger.info("The reporter started successfully");
-    await getCaseIds(this);
+
+    const all_case_ids = await getCaseIds(this);
     await getTRcases(this);
     await this.addMissingCasesToTestSuite();
+
     removedCaseIds = case_ids.filter((item) => !trCaseIds.includes(item));
     await getExistingCaseIds(trCaseIds);
     this.needToCreateRun = this.needNewRun(
@@ -180,6 +185,12 @@ class CallerPlaywright extends BaseClass {
         this.logRunURL();
       }
     }
+    await this.addMissingCasesToRun
+    (
+      runId,  
+      all_case_ids
+    )
+
     if (this.needToCreateRun) {
       let getTestsResponse = await this.tr_api.getTests(runId).catch((err) => {
         logger.error(err.message);
@@ -343,7 +354,7 @@ class CallerPlaywright extends BaseClass {
     async function waitForAllUpdates(self) {
       if (self.testrailConfigs.updateResultAfterEachCase) {
         let timeout = 0;
-        while (updatedTestsAmount != executedTestCaseCount.length) {
+        while (executingTestCaseCount.length != executedTestCaseCount.length) {
           if (timeout == allCasesUpdateTimeout) {
             logger.error(
               "There is a problem with the test execution." +
