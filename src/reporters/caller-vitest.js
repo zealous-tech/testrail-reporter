@@ -128,6 +128,11 @@ class CallerVitest extends BaseClass {
       if (this.testrailConfigs.testRailUpdateInterval !== 0) {
         this.startScheduler(runId);
       }
+      await this.addMissingCasesToRun
+      (
+        runId,  
+        case_ids
+      )
     }
   }
 
@@ -184,15 +189,19 @@ class CallerVitest extends BaseClass {
     for (const element of arr) {
       if (!element.name.match(/[@C][?\d]{1,8}$/gm) && element.tasks) {
         this.processStartList(element.tasks);
-      } else {
+      } 
+      else 
+      {
         const case_id = this.utils._extractCaseIdsFromTitle(element.name);
-        if (case_id != null) 
+        if (case_id != null || case_id.length > 1) 
         {
           case_id.forEach((item) => 
           {             
             case_ids.push(item) 
           })
-        } else if (self.testrailConfigs.create_missing_cases) {
+        } 
+        if (this.testrailConfigs.create_missing_cases) 
+        {
           this.missingCasesTitles.push(element.name);
         }
         if (element.mode === "skip") {
