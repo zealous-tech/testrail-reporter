@@ -262,9 +262,15 @@ class BaseClass {
     logger.info("\nAdding missing test cases to TestRail run");
     try 
     {
+      const response = await this.tr_api.getTests(runId)
+      const caseIds =  response.map(({ case_id }) => 
+      {
+        return case_id
+      })
+
       const payload = 
       {
-        case_ids: allTestCasesId,
+        case_ids: [...allTestCasesId, ...caseIds],
       };
       await this.tr_api.updateRun(runId, payload);
       logger.info("\nTest run updated successfully\n");
