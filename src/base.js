@@ -222,8 +222,9 @@ class BaseClass {
 
   async addMissingCasesToTestSuite() {
     if (this.missingCasesTitles.length < 1 
-      || !this.create_missing_cases) 
+      || this.create_missing_cases == false) 
     {
+      logger.info("Create_missing_cases flag is false no case will be added");
       return;
     }
     logger.info("\nAdding missing test cases to TestRail suite");
