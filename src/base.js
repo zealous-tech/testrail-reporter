@@ -73,8 +73,7 @@ class BaseClass {
    needToCollectMissingCases() 
    {
       return (
-        this.testrailConfigs.create_missing_cases ||
-        this.testrailConfigs.add_missing_cases_to_run
+        this.testrailConfigs.create_missing_cases
       );
   }
 
