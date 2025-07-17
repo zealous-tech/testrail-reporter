@@ -73,7 +73,8 @@ class BaseClass {
    needToCollectMissingCases() 
    {
       return (
-        this.testrailConfigs.create_missing_cases
+        this.testrailConfigs.create_missing_cases ||
+        this.testrailConfigs.add_missing_cases_to_run
       );
   }
 
@@ -220,7 +221,9 @@ class BaseClass {
   }
 
   async addMissingCasesToTestSuite() {
-    if (this.missingCasesTitles.length < 1) {
+    if (this.missingCasesTitles.length < 1 
+      || !this.create_missing_cases) 
+    {
       return;
     }
     logger.info("\nAdding missing test cases to TestRail suite");
