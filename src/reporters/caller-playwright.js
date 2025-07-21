@@ -398,14 +398,6 @@ class CallerPlaywright extends BaseClass {
     this.logRunURL();
   }
 
-  sanitizeString(str) {
-    /*
-        removes unwanted whitespaces and bracets,
-        and formats the string to a standardized format
-        */
-    return str.replace(/[\s'"]/g, "").toLowerCase();
-  }
-
   stepResultComment(result, caseId) {
     const testRailCaseSteps = existingCustomStepsMap[caseId];
     if (testRailCaseSteps) {
@@ -423,8 +415,8 @@ class CallerPlaywright extends BaseClass {
         let testCaseStatus = null;
         if (stepsDoMatch) {
           if (
-            this.sanitizeString(step.title) ===
-            this.sanitizeString(testRailStep.content)
+            self.utils.sanitizeString(step.title) ===
+            self.utils.sanitizeString(testRailStep.content)
           ) {
             testRailExpected = testRailStep.expected;
           } else {

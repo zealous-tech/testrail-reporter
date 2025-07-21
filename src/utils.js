@@ -22,6 +22,11 @@ class Utils {
     return `${s}s`;
   }
 
+  /**
+   * Extracts TestRail case IDs from the test title if they exist
+   * @param {*} title
+   * @returns
+   */
   _extractCaseIdsFromTitle(title) {
     const matches = [];
     let match;
@@ -32,6 +37,17 @@ class Utils {
     }
     return matches;
   }
+
+  /**
+   * Removes unwanted whitespaces and bracets,
+   * and formats the string to a standardized format
+   * @param {*} str
+   * @returns
+   */
+  _sanitizeString(str) {
+    return str.replace(/[\s'"]/g, "").toLowerCase();
+  }
+
 }
 
 module.exports = Utils;
