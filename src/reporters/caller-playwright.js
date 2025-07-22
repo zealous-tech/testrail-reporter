@@ -367,7 +367,7 @@ class CallerPlaywright extends BaseClass {
         let timeout = 0;
         while 
         (
-          self._updatedTestCaseCountInTestRail == 0 &&
+          self._updatedTestCaseCountInTestRail == 0 ||
           self._updatedTestCaseCountInTestRail != executingTestCaseCount.length
         ) 
         {
