@@ -71,6 +71,9 @@ async function waitForAllTestsEnd() {
 }
 
 class CallerPlaywright extends BaseClass {
+  
+  _updatedTestCaseCountInTestRail = 0
+  
   constructor() {
     super();
     this.utils = new Utils();
@@ -258,17 +261,20 @@ class CallerPlaywright extends BaseClass {
       }
     }
 
-    async function updateRunIfNeeded(self, data) {
+    async function updateRunIfNeeded(self, data) 
+    {
       if (
-        self.testrailConfigs.updateResultAfterEachCase &&
-        testrailRunCaseIds.includes(data.case_id)
-      ) {
+        self.testrailConfigs.updateResultAfterEachCase 
+      ) 
+      {
         let apiRes = await self.tr_api
-          .addResultForCase(runId, data.case_id, data)
+          .addResultsForCases(runId, { results: data })
           .catch((err) => {
             logger.error("Failed to add test result");
             logger.error(err);
           });
+        self._updatedTestCaseCountInTestRail++                
+
         if (
           apiRes != null &&
           apiRes.id != undefined &&
@@ -319,16 +325,21 @@ class CallerPlaywright extends BaseClass {
     logger.debug("onTestEnd: ", test.title);
 
     const all_ids = this.utils._extractCaseIdsFromTitle(test.title);
-    if (all_ids.length > 0) {
-      for (const id of all_ids) {
-          case_ids.push(id);
-          informMissingCaseIfNeed(this, id);
-          const caseData = await constructCaseData(this, id);
-          if (testrailRunCaseIds.includes(id)) {
-            testResults.push(caseData);
-          }
-          await updateRunIfNeeded(this, caseData);
-      }
+    if (all_ids.length > 0) 
+    {
+        const results = []
+        for (const id of all_ids)
+        {
+            case_ids.push(id);
+            informMissingCaseIfNeed(this, id);
+            const caseData = await constructCaseData(this, id);
+            if (testrailRunCaseIds.includes(id)) 
+            {
+              testResults.push(caseData);
+            }
+            results.push(caseData)
+        }
+        await updateRunIfNeeded(this, results);
     }
     // remove the test id from the testQueue
     testQueue = testQueue.filter((item) => item !== test.id);
@@ -354,7 +365,12 @@ class CallerPlaywright extends BaseClass {
     async function waitForAllUpdates(self) {
       if (self.testrailConfigs.updateResultAfterEachCase) {
         let timeout = 0;
-        while (executingTestCaseCount.length != executedTestCaseCount.length) {
+        while 
+        (
+          self._updatedTestCaseCountInTestRail == 0 &&
+          self._updatedTestCaseCountInTestRail != executingTestCaseCount.length
+        ) 
+        {
           if (timeout == allCasesUpdateTimeout) {
             logger.error(
               "There is a problem with the test execution." +
@@ -366,6 +382,7 @@ class CallerPlaywright extends BaseClass {
           }
           timeout += minDelay;
           await setTimeout(minDelay);
+          logger.info("Waiting to updates")
         }
       }
     }
