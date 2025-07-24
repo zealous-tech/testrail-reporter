@@ -273,16 +273,25 @@ class CallerPlaywright extends BaseClass {
             logger.error("Failed to add test result");
             logger.error(err);
           });
-        self._updatedTestCaseCountInTestRail++                
+
+        const ids = apiRes.map((item) => 
+        {
+          return item.id
+        })
 
         if (
-          apiRes != null &&
-          apiRes.id != undefined &&
-          apiRes.hasOwnProperty("id")
-        ) {
-          await uploadAttachments(self, apiRes.id);
+          ids != null &&
+          ids != undefined
+        ) 
+        {
+          for(const id of ids)
+          {
+            console.log("Uploading attachments")
+            await uploadAttachments(self, id);
+          }
           updatedTestsAmount += 1;
         }
+        self._updatedTestCaseCountInTestRail++                
       }
     }
 
@@ -382,7 +391,7 @@ class CallerPlaywright extends BaseClass {
           }
           timeout += minDelay;
           await setTimeout(minDelay);
-          logger.info("Waiting to updates")
+          logger.info("Waiting for updates")
         }
       }
     }
