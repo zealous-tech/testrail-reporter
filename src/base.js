@@ -2,10 +2,12 @@ const TestRail = require("@dlenroc/testrail");
 const schedule = require("node-schedule");
 const fs = require("fs");
 const path = require("path");
+const Utils = require("./utils.js");
 const getLogger = require("./logger.js");
 const logger = getLogger();
+const constants = require("./constants");
 
-const DEFAULT_CONFIG_FILENAME = "testrail.config.js";
+const DEFAULT_CONFIG_FILENAME = constants.DEFAULT_CONFIG_FILENAME;
 const configPath = path.resolve(process.cwd(), DEFAULT_CONFIG_FILENAME);
 const {
   base_url,
@@ -67,7 +69,8 @@ class BaseClass {
     this.missingCasesTitles = [];
     this.missingCasesIds = [];
     this.createdCasesData = [];
-    this.newCasesOutputFile = "testrail_created_cases.json";
+    this.newCasesOutputFile = constants.NEW_CASES_OUTPUT;
+    this.utils = new Utils();
   }
 
    needToCollectMissingCases() 
@@ -78,49 +81,49 @@ class BaseClass {
       );
   }
 
-  addRunToTestRail = async (case_ids) => {
-    logger.info("Adding new Run to TestRail");
-    const today = new Date();
-    const monthNames = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-    const monthAbbreviation = monthNames[today.getMonth()];
-    try {
-      const response = await this.tr_api.addRun(
-        this.testrailConfigs.project_id,
-        {
-          suite_id: this.testrailConfigs.suite_id,
-          milestone_id:
-            this.testrailConfigs.create_new_run.milestone_id !== 0
-              ? this.testrailConfigs.create_new_run.milestone_id
-              : undefined,
-          name:
-            `${this.testrailConfigs.create_new_run.run_name}` +
-            ` ${today.getDate()}-${monthAbbreviation}` +
-            `-${today.getFullYear()}` +
-            ` ${today.toTimeString().split(" ")[0]}`,
-          description: "TestRail automatic reporter module",
-          include_all: this.testrailConfigs.create_new_run.include_all,
-          case_ids: case_ids,
-        }
-      );
-      return response;
-    } catch (error) {
-      throw new Error(
-        `Failed to add run: ${error.message || "Unknown error occurred"}`
-      );
+  addRunToTestRail = async (caseIds = []) => {
+    if (!Array.isArray(caseIds)) {
+      throw new TypeError("addRunToTestRail expects an array of case IDs");
     }
+
+    const {
+      project_id: projectId,
+      suite_id: suiteId,
+      create_new_run: { milestone_id: milestoneId, run_name: runName, include_all: includeAll },
+    } = this.testrailConfigs;
+
+    // modern timestamp
+    const timestamp = await this.utils._dateInDdMmYyyyHhMmSs();
+    const name = `${runName} ${timestamp}`;
+
+    logger.info(`Creating TestRail run "${name}" in project ${projectId}`);
+
+    // simple retry
+    let response;
+    for (let i = 1; i <= 3; i++) {
+      try {
+        response = await this.tr_api.addRun(projectId, {
+          suite_id: suiteId,
+          milestone_id: milestoneId || undefined,
+          name,
+          description: "Automated TestRail reporter",
+          include_all: includeAll,
+          case_ids: caseIds,
+        });
+        break;
+      } catch (err) {
+        logger.warn(`addRunToTestRail attempt ${i} failed: ${err.message}`);
+        if (i === 3) throw new Error(`Failed to add run after 3 attempts: ${err.message}`);
+        await new Promise(res => setTimeout(res, 1000 * i));
+      }
+    }
+
+    // cache and return
+    this.runId  = response.id;
+    this.runURL = response.url;
+    logger.info(`TestRail run created: ${this.runURL}`);
+
+    return { id: this.runId, url: this.runURL };
   };
 
   async updateTestRailResults(testRailResults, runId) {
@@ -194,27 +197,56 @@ class BaseClass {
       .catch((err) => logger.error(err));
   }
 
+  /**
+   * This method uploads the attachments to the TestRail run.
+   * It accepts the localResults representing the run test cases results
+   * and the apiRes representing the test cases results from the TestRail.
+   * @param {Array<Object>} localResults  – your objects, each with an `attachments` array
+   * @param {Array|Object} apiRes         – what addResultsForCases returned
+   */
   async uploadAttachmentsToTestRail(localResults, apiRes) {
-    /*
-     * This method uploads the attachments to the TestRail run.
-     * It accepts the localResults representing the run test cases results
-     * and the apiRes representing the test cases results from the TestRail.
-     * */
-    for (let i = 0; i < apiRes.length; i++) {
-      let attachments = localResults[i].attachments;
-      if (!attachments) {
+    // Normalize to array
+    const resultsArray = Array.isArray(apiRes)
+      ? apiRes
+      : Array.isArray(apiRes.results)
+        ? apiRes.results
+        : [];
+
+    if (resultsArray.length !== localResults.length) {
+      logger.warn(
+        `uploadAttachmentsToTestRail: mismatch between localResults (${localResults.length}) ` +
+        `and apiRes (${resultsArray.length})`
+      );
+    }
+
+    // Only iterate as far as both lists overlap
+    const count = Math.min(resultsArray.length, localResults.length);
+    for (let i = 0; i < count; i++) {
+      const attachments = localResults[i].attachments;
+      const resultId = resultsArray[i].id;
+      if (!resultId) {
+        logger.warn(`No TestRail result id at index ${i}, skipping attachments`);
         continue;
       }
-      for (const attachment of attachments) {
+      // Filter out any invalid entries up‑front
+      const validFiles = attachments.filter(fp => typeof fp === 'string' && fp.trim() !== '');
+      if (validFiles.length !== attachments.length) {
+        logger.warn(
+          `uploadAttachmentsToTestRail: some attachments for result ${resultId} ` +
+          `are invalid/non‑string: ${JSON.stringify(attachments)}`
+        );
+      }
+      for (const filePath of validFiles) {
         try {
-          logger.info(`Uploading "${attachment}" attachment.`);
-          const payload = {
-            name: path.basename(attachment),
-            value: fs.createReadStream(attachment),
-          };
-          await this.tr_api.addAttachmentToResult(apiRes[i].id, payload);
-        } catch (error) {
-          logger.warn(`Error uploading attachment: ${error.message}`);
+          logger.info(`Uploading attachment "${filePath}" for result ${resultId}`);
+          await this.tr_api.addAttachmentToResult(
+            resultId,
+            { name: path.basename(filePath), value: fs.createReadStream(filePath) }
+          );
+        } catch (err) {
+          logger.warn(
+            `Error uploading "${filePath}" for result ${resultId}: ${err.message}`
+          );
         }
       }
     }

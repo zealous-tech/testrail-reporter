@@ -1,10 +1,10 @@
-const Utils = require("../utils.js");
 const { setTimeout } = require("timers/promises");
 const BaseClass = require("../base").BaseClass;
 const testResults = require("../base").testResults;
 const case_ids = require("../base").case_ids;
 const getLogger = require("../logger.js");
 const logger = getLogger();
+const constants = require("../constants");
 
 const startList = {};
 global.need_to_stop = false;
@@ -20,7 +20,6 @@ let getCasesResponse;
 class CallerVitest extends BaseClass {
   constructor() {
     super();
-    this.utils = new Utils();
   }
 
   onInit() {
@@ -187,7 +186,7 @@ class CallerVitest extends BaseClass {
 
   processStartList(arr) {
     for (const element of arr) {
-      if (!element.name.match(/[@C][?\d]{1,8}$/gm) && element.tasks) {
+      if (!element.name.match(constants.CASE_ID_REGEX) && element.tasks) {
         this.processStartList(element.tasks);
       } 
       else 

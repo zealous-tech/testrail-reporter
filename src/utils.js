@@ -1,4 +1,4 @@
-const regex = /C(\d{1,9})/g;
+const constants = require("./constants");
 
 class Utils {
   _formatTime(ms) {
@@ -30,7 +30,7 @@ class Utils {
   _extractCaseIdsFromTitle(title) {
     const matches = [];
     let match;
-    while ((match = regex.exec(title)) !== null) {
+    while ((match = constants.CASE_ID_REGEX.exec(title)) !== null) {
       if (match[1]) {
         matches.push(parseInt(match[1]));
       }
@@ -46,6 +46,30 @@ class Utils {
    */
   _sanitizeString(str) {
     return str.replace(/[\s'"]/g, "").toLowerCase();
+  }
+
+  _padTwoDigits(num) {
+    return num.toString().padStart(2, "0");
+  }
+
+  _dateInDdMmYyyyHhMmSs() {
+    const date = new Date();
+    const dateDiveder = "-";
+    const month = constants.MONTH_NAMES[date.getMonth()];
+
+    return (
+      [
+        this._padTwoDigits(date.getDate()),
+        month,
+        date.getFullYear(),
+      ].join(dateDiveder) +
+      " " +
+      [
+        this._padTwoDigits(date.getHours()),
+        this._padTwoDigits(date.getMinutes()),
+        this._padTwoDigits(date.getSeconds()),
+      ].join(":")
+    );
   }
 
 }

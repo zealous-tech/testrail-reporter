@@ -1,6 +1,5 @@
 const fs = require("fs");
 const path = require("path");
-const Utils = require("../utils.js");
 const process = require("process");
 const getLogger = require("../logger.js");
 const logger = getLogger();
@@ -76,7 +75,6 @@ class CallerPlaywright extends BaseClass {
   
   constructor() {
     super();
-    this.utils = new Utils();
   }
 
   async onBegin(config, suite) {
@@ -261,37 +259,34 @@ class CallerPlaywright extends BaseClass {
       }
     }
 
-    async function updateRunIfNeeded(self, data) 
-    {
-      if (
-        self.testrailConfigs.updateResultAfterEachCase 
-      ) 
-      {
-        let apiRes = await self.tr_api
-          .addResultsForCases(runId, { results: data })
-          .catch((err) => {
-            logger.error("Failed to add test result");
-            logger.error(err);
-          });
+    async function updateRunIfNeeded(self, data) {
+      if (!self.testrailConfigs.updateResultAfterEachCase) return;
 
-        const ids = apiRes.map((item) => 
-        {
-          return item.id
-        })
+      // Push results to TestRail
+      let apiRes = await self.tr_api
+        .addResultsForCases(self.runId, { results: data })
+        .catch(err => {
+          logger.error("Failed to add test results:", err);
+          return [];
+        });
 
-        if (
-          ids != null &&
-          ids != undefined
-        ) 
-        {
-          for(const id of ids)
-          {
-            console.log("Uploading attachments")
-            await uploadAttachments(self, id);
-          }
-          updatedTestsAmount += 1;
+      // Normalize to an array (handles both plain-array and { results: [...] } shapes)
+      const resultsArray = Array.isArray(apiRes)
+        ? apiRes
+        : Array.isArray(apiRes?.results)
+          ? apiRes.results
+          : [];
+      // For each returned result, upload its attachments
+      for (const result of resultsArray) {
+        if (result?.id) {
+          await uploadAttachments(self, result.id);
+          self.updatedTestsAmount = (self.updatedTestsAmount || 0) + 1;
+        } else {
+          logger.warn(
+            `updateRunIfNeeded: skipping upload for invalid result: ${JSON.stringify(result)}`
+          );
         }
-        self._updatedTestCaseCountInTestRail++                
+        self._updatedTestCaseCountInTestRail++
       }
     }
 
