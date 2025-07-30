@@ -46,6 +46,7 @@ let testQueue = [];
 let updatedTestsAmount = 0;
 let executingTestCaseCount = new Array()
 let executedTestCaseCount = new Array()
+let casesWithoutIds = new Array()
 
 async function waitForBegin() {
   // wait for the onBegin hook to complete
@@ -65,6 +66,8 @@ async function waitForAllTestsEnd() {
   // wait for all the tests to be completed
   while (executingTestCaseCount.length != executedTestCaseCount.length) 
   {
+    logger.info("Executing test case count ", executingTestCaseCount.length)
+    logger.info("Executed test case count ", executedTestCaseCount.length)
     await setTimeout(minDelay);
   }
 }
@@ -149,10 +152,10 @@ class CallerPlaywright extends BaseClass {
 
     const all_case_ids = await getCaseIds(this);
     await getTRcases(this);
-    await this.addMissingCasesToTestSuite();
 
     removedCaseIds = case_ids.filter((item) => !trCaseIds.includes(item));
     await getExistingCaseIds(trCaseIds);
+
     this.needToCreateRun = this.needNewRun(
       case_ids,
       existingCaseIds,
@@ -182,14 +185,21 @@ class CallerPlaywright extends BaseClass {
           },
         );
         runId = createRunResponse.id;
+        await this.updateTestRunIncludeAllField
+        (
+          runId, 
+          false, 
+          await this.getCasesIdsFromRun(runId)
+        )
         this.runURL = createRunResponse.url;
         this.logRunURL();
       }
     }
+    const createdNewTestCasesIds = await this.addMissingCasesToTestSuite();
     await this.addMissingCasesToRun
     (
       runId,  
-      all_case_ids
+      [...all_case_ids, ...createdNewTestCasesIds]
     )
 
     if (this.needToCreateRun) {
@@ -328,7 +338,17 @@ class CallerPlaywright extends BaseClass {
     executedTestCaseCount.push(test.id)
     logger.debug("onTestEnd: ", test.title);
 
-    const all_ids = this.utils._extractCaseIdsFromTitle(test.title);
+    let all_ids = this.utils._extractCaseIdsFromTitle(test.title);
+    if( all_ids.length == 0)
+    {
+      all_ids = await this.getCreatedCaseIdsByTitle(test.title) || []
+      casesWithoutIds.push(test.title)
+      if (all_ids.length == 0) 
+      {
+        this._updatedTestCaseCountInTestRail++
+      }
+    }
+
     if (all_ids.length > 0) 
     {
         const results = []
@@ -386,7 +406,8 @@ class CallerPlaywright extends BaseClass {
           }
           timeout += minDelay;
           await setTimeout(minDelay);
-          logger.info("Waiting for updates")
+          logger.info("Updated test cases count in test rail ", self._updatedTestCaseCountInTestRail)
+          logger.info("Executing test cases count  ", executingTestCaseCount.length)
         }
       }
     }
@@ -417,6 +438,14 @@ class CallerPlaywright extends BaseClass {
       await this.updateCurrentResults(runId);
     }
     this.logRunURL();
+
+    if (casesWithoutIds.length > 0) 
+    {
+      logger.warn(`The following test cases do not have IDs in their titles:\n
+        ${casesWithoutIds}\n
+        Please add the corresponding TestRail IDs to the titles.\n
+        Otherwise, duplicate test cases will be created in the next run.`)
+    }
   }
 
   stepResultComment(result, caseId) {

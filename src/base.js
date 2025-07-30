@@ -126,6 +126,35 @@ class BaseClass {
     return { id: this.runId, url: this.runURL };
   };
 
+  async updateTestRunIncludeAllField(runId, fieldValue = false, casesId)
+  {
+    logger.info(`updating include_all field value to ${fieldValue}`)
+    await this.tr_api.updateRun(runId, { 
+      include_all : fieldValue ,
+      case_ids : casesId
+    })
+  }
+
+  async getCasesIdsFromRun(runId)
+  {
+    logger.info("Fetching cases ids from test run")
+    const casesIdInRun = []
+    let response;
+    do{
+      response = await this.tr_api.getTests
+      (
+        runId, 
+        { 
+          offset : casesIdInRun.length , 
+          limit : constants.MAX_CASES_PER_RUN_FETCH 
+        }
+      )
+      response.forEach((item) => { casesIdInRun.push(item.case_id) })
+      logger.info(`Fetched cases count equal to ${casesIdInRun.length}`)
+    } while(response.length != 0)
+    return casesIdInRun
+  }
+
   async updateTestRailResults(testRailResults, runId) {
     if (testRailResults.length === 0) {
       logger.warn(
@@ -254,11 +283,13 @@ class BaseClass {
 
   async addMissingCasesToTestSuite() {
     if (this.missingCasesTitles.length < 1 
-      || this.create_missing_cases == false) 
+      || this.testrailConfigs.create_missing_cases == false) 
     {
       logger.info("Create_missing_cases flag is false no case will be added");
-      return;
+      return [];
     }
+
+    const createdTestCasesId = []
     logger.info("\nAdding missing test cases to TestRail suite");
     let sections = await this.tr_api.getSections(
       this.testrailConfigs.project_id,
@@ -273,6 +304,7 @@ class BaseClass {
         logger.warn(`\nCase already exists in suite: '${title}'`);
         continue;
       }
+      // todo change hardcoded section to choose dynamic
       let createdCase = await this.tr_api.addCase(sections[0].id, {
         title: title,
       });
@@ -283,14 +315,33 @@ class BaseClass {
         section_id: createdCase.section_id,
         suite_id: createdCase.suite_id,
       });
+      createdTestCasesId.push(createdCase.id)
     }
     this.writeCreatedCasesToFile();
+    return createdTestCasesId
   }
 
+  async getCreatedCaseIdsByTitle(testTitle)
+  {
+    if (this.testrailConfigs.add_missing_cases_to_run == false) 
+    {
+      logger.info(`Skipping result for "${testTitle}" because add_missing_cases_to_run is disabled.`);
+      return []
+    }
+
+    if(this.createdCasesData.length > 0)
+    {
+      const result = this.createdCasesData.find(
+        item => item.title?.trim().toLowerCase() === testTitle?.trim().toLowerCase()
+      );
+      return [result.id]
+    }
+  }
   async addMissingCasesToRun(runId, allTestCasesId) 
   {
     if (!this.testrailConfigs.add_missing_cases_to_run ) 
     {
+      logger.info("\n No missing case was added into the run");
       return;
     }
 
