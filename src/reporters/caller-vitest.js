@@ -35,19 +35,6 @@ class CallerVitest extends BaseClass {
   async onCollected(file) {
     const setRunId = async () => {
       runId = this.testrailConfigs.use_existing_run.id;
-      await this.tr_api
-        .getRun(runId)
-        .then(() => {
-          logger.info("The runId is a valid test run id!!");
-        })
-        .catch((error) => {
-          logger.error(error.message);
-          throw error.message;
-        });
-      logger.info(
-        `The Run started, utilizing an existing TestRail Run` +
-          `with "${runId}" id.`
-      );
     };
 
     const getSuiteCaseIds = async () => {
@@ -83,25 +70,11 @@ class CallerVitest extends BaseClass {
       }
     };
 
-    const addRunToTestRail = async () => {
-      if (this.needToCreateRun) {
-        createRunResponse = await this.addRunToTestRail(existingCaseIds).catch(
-          (err) => {
-            logger.error(err.message);
-            throw err.message;
-          }
-        );
-        runId = createRunResponse.id;
-        this.runURL = createRunResponse.url;
-        this.logRunURL();
-      }
-    };
-
     logger.debug("onCollected");
     files_count++;
     this.processStartList(file);
     if (files_count === paths_count) {
-      await this.addMissingCasesToTestSuite();
+      
       if (this.testrailConfigs.use_existing_run.id !== 0) {
         await setRunId();
       } else {
@@ -122,20 +95,28 @@ class CallerVitest extends BaseClass {
           removedCaseIds,
         );
         informAboutMissingCases();
-        await addRunToTestRail();
+        const { id } =  await this.addRunToTestRail(existingCaseIds);
+        runId = id
+        await this.updateTestRunIncludeAllField
+        (
+          id,
+          false,
+          await this.getCasesIdsFromRun(runId)
+        )
       }
       if (this.testrailConfigs.testRailUpdateInterval !== 0) {
         this.startScheduler(runId);
       }
+      const createdNewTestCasesIds = await this.addMissingCasesToTestSuite();
       await this.addMissingCasesToRun
       (
         runId,  
-        case_ids
+        [...case_ids, ...createdNewTestCasesIds]
       )
     }
   }
 
-  onTaskUpdate(packs) {
+  async onTaskUpdate(packs) {
     logger.debug("onTaskUpdate");
     packs.forEach((element) => {
       const testRunId = element[0];
