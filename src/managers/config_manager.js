@@ -44,6 +44,7 @@ class ConfigManager
 			create_new_run: create_new_run,
 			status: status,
 		};
+		this.validateConfig()
 	}
 
 	validateConfig() 
