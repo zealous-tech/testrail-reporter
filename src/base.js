@@ -2,27 +2,12 @@ const TestRail = require("@dlenroc/testrail");
 const schedule = require("node-schedule");
 const fs = require("fs");
 const path = require("path");
-const Utils = require("./utils.js");
-const getLogger = require("./logger.js");
+const Utils = require("./utils");
+const getLogger = require("./logger");
 const logger = getLogger();
-const constants = require("./constants");
-
-const DEFAULT_CONFIG_FILENAME = constants.DEFAULT_CONFIG_FILENAME;
-const configPath = path.resolve(process.cwd(), DEFAULT_CONFIG_FILENAME);
-const {
-  base_url,
-  user,
-  pass,
-  project_id,
-  suite_id,
-  create_missing_cases,
-  add_missing_cases_to_run,
-  testRailUpdateInterval,
-  updateResultAfterEachCase,
-  use_existing_run,
-  create_new_run,
-  status,
-} = require(configPath);
+const constants = require("./constants/constants");
+const filePaths = require("./constants/filePaths");
+const { getConfigManager } = require("./managers/configManager");
 
 const testResults = [];
 const case_ids = [];
@@ -30,35 +15,19 @@ const copiedTestResults = [];
 const expectedFailures = {};
 
 class BaseClass {
-  constructor() {
-    // TODO: fix naming
-    this.testrailConfigs = {
-      base_url: base_url,
-      user: user,
-      pass: pass,
-      project_id: project_id,
-      suite_id: suite_id,
-      add_missing_cases_to_run: add_missing_cases_to_run,
-      create_missing_cases: create_missing_cases,
-      testRailUpdateInterval: testRailUpdateInterval,
-      updateResultAfterEachCase: updateResultAfterEachCase,
-      use_existing_run: use_existing_run,
-      create_new_run: create_new_run,
-      status: status,
-    };
+  constructor(configManager = getConfigManager()) {
+    this.config = configManager;
 
     this.tr_api = new TestRail({
-      host: this.testrailConfigs.base_url,
-      username: this.testrailConfigs.user,
-      password: this.testrailConfigs.pass,
+      host: this.config.baseUrl,
+      username: this.config.user,
+      password: this.config.pass,
     });
 
     this.rule =
-      this.testrailConfigs.testRailUpdateInterval <= 59
-        ? `*/${this.testrailConfigs.testRailUpdateInterval} * * * * *`
-        : `*/${Math.round(
-            this.testrailConfigs.testRailUpdateInterval / 60,
-          )} * * * *`;
+      this.config.updateInterval <= 59
+        ? `*/${this.config.updateInterval} * * * * *`
+        : `*/${Math.round(this.config.updateInterval / 60,)} * * * *`;
 
     // TODO: complete related functionality
     // this variable is used to decide
@@ -69,16 +38,15 @@ class BaseClass {
     this.missingCasesTitles = [];
     this.missingCasesIds = [];
     this.createdCasesData = [];
-    this.newCasesOutputFile = constants.NEW_CASES_OUTPUT;
+    this.newCasesOutputFile = filePaths.NEW_CASES_OUTPUT;
     this.utils = new Utils();
   }
 
-   needToCollectMissingCases() 
-   {
-      return (
-        this.testrailConfigs.create_missing_cases ||
-        this.testrailConfigs.add_missing_cases_to_run
-      );
+  needToCollectMissingCases() {
+    return (
+      this.config.createMissingCases ||
+      this.config.addMissingCasesToRun
+    );
   }
 
   addRunToTestRail = async (caseIds = []) => {
@@ -86,11 +54,9 @@ class BaseClass {
       throw new TypeError("addRunToTestRail expects an array of case IDs");
     }
 
-    const {
-      project_id: projectId,
-      suite_id: suiteId,
-      create_new_run: { milestone_id: milestoneId, run_name: runName, include_all: includeAll },
-    } = this.testrailConfigs;
+    const projectId = this.config.projectId;
+    const suiteId = this.config.suiteId;
+    const { milestone_id: milestoneId, run_name: runName, include_all: includeAll } = this.config.createNewRun;
 
     // modern timestamp
     const timestamp = await this.utils._dateInDdMmYyyyHhMmSs();
@@ -119,39 +85,37 @@ class BaseClass {
     }
 
     // cache and return
-    this.runId  = response.id;
+    this.runId = response.id;
     this.runURL = response.url;
     logger.info(`TestRail run created: ${this.runURL}`);
 
     return { id: this.runId, url: this.runURL };
   };
 
-  async updateTestRunIncludeAllField(runId, fieldValue = false, casesId)
-  {
+  async updateTestRunIncludeAllField(runId, fieldValue = false, casesId) {
     logger.info(`updating include_all field value to ${fieldValue}`)
-    await this.tr_api.updateRun(runId, { 
-      include_all : fieldValue ,
-      case_ids : casesId
+    await this.tr_api.updateRun(runId, {
+      include_all: fieldValue,
+      case_ids: casesId
     })
   }
 
-  async getCasesIdsFromRun(runId)
-  {
+  async getCasesIdsFromRun(runId) {
     logger.info("Fetching cases ids from test run")
     const casesIdInRun = []
     let response;
-    do{
+    do {
       response = await this.tr_api.getTests
-      (
-        runId, 
-        { 
-          offset : casesIdInRun.length , 
-          limit : constants.MAX_CASES_PER_RUN_FETCH 
-        }
-      )
+        (
+          runId,
+          {
+            offset: casesIdInRun.length,
+            limit: constants.MAX_CASES_PER_RUN_FETCH
+          }
+        )
       response.forEach((item) => { casesIdInRun.push(item.case_id) })
       logger.info(`Fetched cases count equal to ${casesIdInRun.length}`)
-    } while(response.length != 0)
+    } while (response.length != 0)
     return casesIdInRun
   }
 
@@ -159,15 +123,15 @@ class BaseClass {
     if (testRailResults.length === 0) {
       logger.warn(
         "No new results or added test cases" +
-          " to update in TestRail. Skipping...",
+        " to update in TestRail. Skipping...",
       );
       return;
     }
     logger.info(`Adding run results(${testRailResults.length}) to TestRail`);
     let result;
     await this.tr_api
-      .getCases(this.testrailConfigs.project_id, {
-        suite_id: this.testrailConfigs.suite_id,
+      .getCases(this.config.projectId, {
+        suite_id: this.config.suiteId,
       })
       .then((tests) => {
         tests.forEach(({ id, custom_bug_ids }) => {
@@ -177,11 +141,11 @@ class BaseClass {
           if (expectedFailures[item.case_id] != undefined) {
             let status_id = item.status_id;
             if (expectedFailures[item.case_id] === true) {
-              if (status_id === this.testrailConfigs.status.pass) {
-                status_id = this.testrailConfigs.status.fixed;
+              if (status_id === this.config.getStatus('passed')) {
+                status_id = this.config.getStatus('fixed');
               }
-              if (status_id === this.testrailConfigs.status.fail) {
-                status_id = this.testrailConfigs.status.expFail;
+              if (status_id === this.config.getStatus('failed')) {
+                status_id = this.config.getStatus('expFail');
               }
             }
             return [...acc, { ...item, status_id }];
@@ -191,17 +155,17 @@ class BaseClass {
         }, []);
       })
       .then(async () => {
-        if (this.testrailConfigs.use_existing_run.id != 0) {
+        if (this.config.useExistingRun.id != 0) {
           await this.tr_api
-            .getResultsForRun(this.testrailConfigs.use_existing_run.id)
+            .getResultsForRun(this.config.useExistingRun.id)
             .then((results) => {
               logger.debug("Results:\n", results);
               results.forEach((res) => {
-                if (res.status_id != this.testrailConfigs.status.untested) {
+                if (res.status_id != this.config.getStatus('untested')) {
                   result = result.filter(
                     (testCase) =>
                       testCase.status_id !==
-                      this.testrailConfigs.status.skipped,
+                      this.config.getStatus('skipped'),
                   );
                 }
               });
@@ -282,9 +246,8 @@ class BaseClass {
   }
 
   async addMissingCasesToTestSuite() {
-    if (this.missingCasesTitles.length < 1 
-      || this.testrailConfigs.create_missing_cases == false) 
-    {
+    if (this.missingCasesTitles.length < 1
+      || this.config.createMissingCases == false) {
       logger.info("Create_missing_cases flag is false no case will be added");
       return [];
     }
@@ -292,9 +255,9 @@ class BaseClass {
     const createdTestCasesId = []
     logger.info("\nAdding missing test cases to TestRail suite");
     let sections = await this.tr_api.getSections(
-      this.testrailConfigs.project_id,
+      this.config.projectId,
       {
-        suite_id: this.testrailConfigs.suite_id,
+        suite_id: this.config.suiteId,
       },
     );
     for (let title of this.missingCasesTitles) {
@@ -321,48 +284,40 @@ class BaseClass {
     return createdTestCasesId
   }
 
-  async getCreatedCaseIdsByTitle(testTitle)
-  {
-    if (this.testrailConfigs.add_missing_cases_to_run == false) 
-    {
+  async getCreatedCaseIdsByTitle(testTitle) {
+    if (this.config.addMissingCasesToRun == false) {
       logger.info(`Skipping result for "${testTitle}" because add_missing_cases_to_run is disabled.`);
       return []
     }
 
-    if(this.createdCasesData.length > 0)
-    {
+    if (this.createdCasesData.length > 0) {
       const result = this.createdCasesData.find(
         item => item.title?.trim().toLowerCase() === testTitle?.trim().toLowerCase()
       );
       return [result.id]
     }
   }
-  async addMissingCasesToRun(runId, allTestCasesId) 
-  {
-    if (!this.testrailConfigs.add_missing_cases_to_run ) 
-    {
+  async addMissingCasesToRun(runId, allTestCasesId) {
+    if (!this.config.addMissingCasesToRun) {
       logger.info("\n No missing case was added into the run");
       return;
     }
 
     logger.info("\nAdding missing test cases to TestRail run");
-    try 
-    {
+    try {
       const response = await this.tr_api.getTests(runId)
-      const caseIds =  response.map(({ case_id }) => 
-      {
+      const caseIds = response.map(({ case_id }) => {
         return case_id
       })
 
-      const payload = 
+      const payload =
       {
         case_ids: [...allTestCasesId, ...caseIds],
       };
       await this.tr_api.updateRun(runId, payload);
       logger.info("\nTest run updated successfully\n");
-    } 
-    catch (error) 
-    {
+    }
+    catch (error) {
       logger.error("\nFailed to update the test run:\n", error);
     }
   }
@@ -378,8 +333,8 @@ class BaseClass {
   }
 
   async isCaseInSuite(title) {
-    let cases = await this.tr_api.getCases(this.testrailConfigs.project_id, {
-      suite_id: this.testrailConfigs.suite_id,
+    let cases = await this.tr_api.getCases(this.config.projectId, {
+      suite_id: this.config.suiteId,
     });
     let caseIds = cases.map((item) => item.id);
     let caseTitles = cases.map((item) => item.title);
@@ -434,8 +389,8 @@ class BaseClass {
      * received from the TestRail.
      * */
     return (
-      statusId === this.testrailConfigs.status.failed ||
-      statusId === this.testrailConfigs.status.expFail
+      statusId === this.config.getStatus('failed') ||
+      statusId === this.config.getStatus('expFail')
     );
   }
 
@@ -461,11 +416,11 @@ class BaseClass {
      * the reporter will not exit, but will inform the user about it.
      * Returns true if the TestRail run needs to be created.
      * */
-    if (removedCaseIds == case_ids || existingCaseIds.length == 0) {
+    if (removedCaseIds.length === case_ids.length || existingCaseIds.length === 0) {
       logger.warn(
         `The provided TestRail suite does not contain` +
-          ` any of the provided case ids.` +
-          ` No TestRail run will be created.`,
+        ` any of the provided case ids.` +
+        ` No TestRail run will be created.`,
       );
       return false;
     }

@@ -1,13 +1,13 @@
 const fs = require("fs");
 const path = require("path");
 const process = require("process");
-const getLogger = require("../logger.js");
+const getLogger = require("../logger");
 const logger = getLogger();
 
-const BaseClass = require("../base.js").BaseClass;
-const testResults = require("../base.js").testResults;
-const case_ids = require("../base.js").case_ids;
-const copiedTestResults = require("../base.js").copiedTestResults;
+const BaseClass = require("../base").BaseClass;
+const testResults = require("../base").testResults;
+const case_ids = require("../base").case_ids;
+const copiedTestResults = require("../base").copiedTestResults;
 const setTimeout = require("timers/promises").setTimeout;
 
 // TODO: fix naming
@@ -64,8 +64,7 @@ async function waitForTest(testId) {
 
 async function waitForAllTestsEnd() {
   // wait for all the tests to be completed
-  while (executingTestCaseCount.length != executedTestCaseCount.length) 
-  {
+  while (executingTestCaseCount.length != executedTestCaseCount.length) {
     logger.info("Executing test case count ", executingTestCaseCount.length)
     logger.info("Executed test case count ", executedTestCaseCount.length)
     await setTimeout(minDelay);
@@ -73,9 +72,9 @@ async function waitForAllTestsEnd() {
 }
 
 class CallerPlaywright extends BaseClass {
-  
+
   _updatedTestCaseCountInTestRail = 0
-  
+
   constructor() {
     super();
   }
@@ -113,12 +112,12 @@ class CallerPlaywright extends BaseClass {
        * If the test cases are not found, the reporter will exit.
        * */
       let getCasesResponse = await self.tr_api
-        .getCases(self.testrailConfigs.project_id, {
-          suite_id: self.testrailConfigs.suite_id,
+        .getCases(self.config.projectId, {
+          suite_id: self.config.suiteId,
         })
         .catch((err) => {
-          const configProjectId = self.testrailConfigs.project_id;
-          const configSuiteId = self.testrailConfigs.suite_id;
+          const configProjectId = self.config.projectId;
+          const configSuiteId = self.config.suiteId;
           logger.error(
             `Failed to get test cases from project by` +
             ` "${configProjectId}" id` +
@@ -161,9 +160,9 @@ class CallerPlaywright extends BaseClass {
       existingCaseIds,
       removedCaseIds,
     );
-    if (this.testrailConfigs.use_existing_run.id != 0) {
+    if (this.config.useExistingRun.id != 0) {
       // TODO: add catch block
-      runId = await this.testrailConfigs.use_existing_run.id;
+      runId = await this.config.useExistingRun.id;
       logger.info(
         `The Run started, utilizing an existing TestRail Run` +
         ` with "${runId}" id.`,
@@ -186,21 +185,21 @@ class CallerPlaywright extends BaseClass {
         );
         runId = createRunResponse.id;
         await this.updateTestRunIncludeAllField
-        (
-          runId, 
-          false, 
-          await this.getCasesIdsFromRun(runId)
-        )
+          (
+            runId,
+            false,
+            await this.getCasesIdsFromRun(runId)
+          )
         this.runURL = createRunResponse.url;
         this.logRunURL();
       }
     }
     const createdNewTestCasesIds = await this.addMissingCasesToTestSuite();
     await this.addMissingCasesToRun
-    (
-      runId,  
-      [...all_case_ids, ...createdNewTestCasesIds]
-    )
+      (
+        runId,
+        [...all_case_ids, ...createdNewTestCasesIds]
+      )
 
     if (this.needToCreateRun) {
       let getTestsResponse = await this.tr_api.getTests(runId).catch((err) => {
@@ -215,8 +214,8 @@ class CallerPlaywright extends BaseClass {
     logger.debug("commonIds: ", commonIds);
 
     if (
-      this.testrailConfigs.testRailUpdateInterval != 0 &&
-      !this.testrailConfigs.updateResultAfterEachCase
+      this.config.updateInterval != 0 &&
+      !this.config.updateAfterEach
     ) {
       this.startScheduler(runId);
     }
@@ -270,7 +269,7 @@ class CallerPlaywright extends BaseClass {
     }
 
     async function updateRunIfNeeded(self, data) {
-      if (!self.testrailConfigs.updateResultAfterEachCase) return;
+      if (!self.config.updateAfterEach) return;
 
       // Push results to TestRail
       let apiRes = await self.tr_api
@@ -311,7 +310,7 @@ class CallerPlaywright extends BaseClass {
     }
 
     async function constructCaseData(self, caseId) {
-      const status_id = self.testrailConfigs.status[result.status];
+      const status_id = self.config.getStatus(result.status);
       const comment = self.setTestComment(result);
       const data = {
         title: test.title,
@@ -339,31 +338,26 @@ class CallerPlaywright extends BaseClass {
     logger.debug("onTestEnd: ", test.title);
 
     let all_ids = this.utils._extractCaseIdsFromTitle(test.title);
-    if( all_ids.length == 0)
-    {
+    if (all_ids.length == 0) {
       all_ids = await this.getCreatedCaseIdsByTitle(test.title) || []
       casesWithoutIds.push(test.title)
-      if (all_ids.length == 0) 
-      {
+      if (all_ids.length == 0) {
         this._updatedTestCaseCountInTestRail++
       }
     }
 
-    if (all_ids.length > 0) 
-    {
-        const results = []
-        for (const id of all_ids)
-        {
-            case_ids.push(id);
-            informMissingCaseIfNeed(this, id);
-            const caseData = await constructCaseData(this, id);
-            if (testrailRunCaseIds.includes(id)) 
-            {
-              testResults.push(caseData);
-            }
-            results.push(caseData)
+    if (all_ids.length > 0) {
+      const results = []
+      for (const id of all_ids) {
+        case_ids.push(id);
+        informMissingCaseIfNeed(this, id);
+        const caseData = await constructCaseData(this, id);
+        if (testrailRunCaseIds.includes(id)) {
+          testResults.push(caseData);
         }
-        await updateRunIfNeeded(this, results);
+        results.push(caseData)
+      }
+      await updateRunIfNeeded(this, results);
     }
     // remove the test id from the testQueue
     testQueue = testQueue.filter((item) => item !== test.id);
@@ -387,14 +381,13 @@ class CallerPlaywright extends BaseClass {
      * */
 
     async function waitForAllUpdates(self) {
-      if (self.testrailConfigs.updateResultAfterEachCase) {
+      if (self.config.updateAfterEach) {
         let timeout = 0;
-        while 
-        (
+        while
+          (
           self._updatedTestCaseCountInTestRail == 0 ||
           self._updatedTestCaseCountInTestRail != executingTestCaseCount.length
-        ) 
-        {
+        ) {
           if (timeout == allCasesUpdateTimeout) {
             logger.error(
               "There is a problem with the test execution." +
@@ -424,23 +417,22 @@ class CallerPlaywright extends BaseClass {
     logger.debug("onEnd\n\n");
 
     if (
-      this.testrailConfigs.testRailUpdateInterval == 0 &&
-      !this.testrailConfigs.updateResultAfterEachCase
+      this.config.updateInterval == 0 &&
+      !this.config.updateAfterEach
     ) {
       await this.updateTestRailResults(testResults, runId);
     }
     global.need_to_stop = true;
     if (
       copiedTestResults.length != testResults.length &&
-      this.testrailConfigs.testRailUpdateInterval != 0 &&
-      !this.testrailConfigs.updateResultAfterEachCase
+      this.config.updateInterval != 0 &&
+      !this.config.updateAfterEach
     ) {
       await this.updateCurrentResults(runId);
     }
     this.logRunURL();
 
-    if (casesWithoutIds.length > 0) 
-    {
+    if (casesWithoutIds.length > 0) {
       logger.warn(`The following test cases do not have IDs in their titles:\n
         ${casesWithoutIds}\n
         Please add the corresponding TestRail IDs to the titles.\n
@@ -464,20 +456,17 @@ class CallerPlaywright extends BaseClass {
         let testRailExpected = "";
         let testCaseStatus = null;
         if (stepsDoMatch) {
-          if (
-            self.utils.sanitizeString(step.title) ===
-            self.utils.sanitizeString(testRailStep.content)
-          ) {
+          if (this.utils._sanitizeString(step.title) === this.utils._sanitizeString(testRailStep.content)) {
             testRailExpected = testRailStep.expected;
           } else {
             testRailExpected =
               "TestRail test step doesn't match to the framework step";
-            testCaseStatus = this.testrailConfigs.status.untested;
+            testCaseStatus = this.config.getStatus('untested');
           }
         } else {
           testRailExpected =
             "Test rail test step doesn't match to the framework step";
-          testCaseStatus = this.testrailConfigs.status.untested;
+          testCaseStatus = this.config.getStatus('untested');
         }
         if (step && step.error != undefined) {
           let stepError = step.error.message
@@ -495,13 +484,13 @@ class CallerPlaywright extends BaseClass {
             content: testRailStep.content,
             expected: testRailExpected + "\n" + expected,
             actual: actual,
-            status_id: testCaseStatus ?? this.testrailConfigs.status.failed,
+            status_id: testCaseStatus ?? this.config.getStatus('failed'),
           };
         } else {
           stepResult = {
             content: testRailStep.content,
             expected: testRailExpected,
-            status_id: testCaseStatus ?? this.testrailConfigs.status.passed,
+            status_id: testCaseStatus ?? this.config.getStatus('passed'),
           };
         }
         custom_step_results.push(stepResult);

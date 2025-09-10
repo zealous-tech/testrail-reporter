@@ -6,6 +6,7 @@ module.exports = {
   project_id: 1,
   suite_id: 1,
   create_missing_cases: true,
+  add_missing_cases_to_run: true,
   testRailUpdateInterval: 0,
   updateResultAfterEachCase: false,
   use_existing_run: {

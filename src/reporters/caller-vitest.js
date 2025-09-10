@@ -2,7 +2,7 @@ const { setTimeout } = require("timers/promises");
 const BaseClass = require("../base").BaseClass;
 const testResults = require("../base").testResults;
 const case_ids = require("../base").case_ids;
-const getLogger = require("../logger.js");
+const getLogger = require("../logger");
 const logger = getLogger();
 const constants = require("../constants");
 
@@ -34,17 +34,17 @@ class CallerVitest extends BaseClass {
 
   async onCollected(file) {
     const setRunId = async () => {
-      runId = this.testrailConfigs.use_existing_run.id;
+      runId = this.config.useExistingRun.id;
     };
 
     const getSuiteCaseIds = async () => {
       getCasesResponse = await this.tr_api
-        .getCases(this.testrailConfigs.project_id, {
-          suite_id: this.testrailConfigs.suite_id,
+        .getCases(this.config.projectId, {
+          suite_id: this.config.suiteId,
         })
         .catch((err) => {
-          const configProjectId = this.testrailConfigs.project_id;
-          const configSuiteId = this.testrailConfigs.suite_id;
+          const configProjectId = this.config.projectId;
+          const configSuiteId = this.config.suiteId;
           logger.error(
             `Failed to get test cases from project by` +
               `" ${configProjectId}" id` +
@@ -75,7 +75,7 @@ class CallerVitest extends BaseClass {
     this.processStartList(file);
     if (files_count === paths_count) {
       
-      if (this.testrailConfigs.use_existing_run.id !== 0) {
+      if (this.config.useExistingRun.id !== 0) {
         await setRunId();
       } else {
         await getSuiteCaseIds();
@@ -104,7 +104,7 @@ class CallerVitest extends BaseClass {
           await this.getCasesIdsFromRun(runId)
         )
       }
-      if (this.testrailConfigs.testRailUpdateInterval !== 0) {
+      if (this.config.updateInterval !== 0) {
         this.startScheduler(runId);
       }
       const createdNewTestCasesIds = await this.addMissingCasesToTestSuite();
@@ -124,9 +124,9 @@ class CallerVitest extends BaseClass {
       if (case_id && element[1].duration >= 0) {
         if (element[1].state === "pass") element[1].state = "passed";
         if (element[1].state === "fail") element[1].state = "failed";
-        const status_id = this.testrailConfigs.status[element[1].state];
+        const status_id = this.config.getStatus(element[1].state);
         const comment =
-          status_id === this.testrailConfigs.status.failed
+          status_id === this.config.getStatus('failed')
             ? `#Error message:#\n ${JSON.stringify(
                 element[1].errors[0].message,
                 null,
@@ -155,7 +155,7 @@ class CallerVitest extends BaseClass {
 
   async onFinished(packs) {
     logger.debug("onFinished");
-    if (this.testrailConfigs.testRailUpdateInterval === 0) {
+    if (this.config.updateInterval === 0) {
       while (runId === 0) {
         await setTimeout(100);
       }
@@ -180,7 +180,7 @@ class CallerVitest extends BaseClass {
             case_ids.push(item) 
           })
         } 
-        if (this.testrailConfigs.create_missing_cases) 
+        if (this.config.createMissingCases)
         {
           this.missingCasesTitles.push(element.name);
         }
@@ -190,7 +190,7 @@ class CallerVitest extends BaseClass {
           }
           const data = {
             case_id: case_id ? +case_id[1] : 0,
-            status_id: this.testrailConfigs.status.skipped,
+            status_id: this.config.getStatus('skipped'),
             comment: "This test was marked as 'Skipped'.",
             elapsed: "",
             defects: "",

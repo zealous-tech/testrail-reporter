@@ -1,9 +1,9 @@
-//const testRail = require('./testRail.js');
-const events = require('./events.js');
-const filePaths = require('./filePaths.js');
+const constants = require('./constants');
+const filePaths = require('./filePaths');
+const jsonSchema = require('./jsonSchema');
 
 module.exports = {
-//  ...testRail,
-  ...events,
+  ...constants,
   ...filePaths,
+  ...jsonSchema
 };
