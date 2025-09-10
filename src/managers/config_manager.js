@@ -25,6 +25,7 @@ class ConfigManager
 { 
 
 	_createdRunId
+	_createdRunUrl
 	constructor()
 	{
 		this.testRailConfigs = 
@@ -64,6 +65,11 @@ class ConfigManager
 		_createdRunId =  runId
 	}
 
+	setRunUrl(url)
+	{
+		_createdRunUrl =  url
+	}
+
 	getBaseUrl() { return this.config.base_url; }
 	getUser() { return this.config.user; }
 	getPass() { return this.config.pass; }
@@ -75,7 +81,8 @@ class ConfigManager
 	getTestRailUpdateInterval() { return this.config.testRailUpdateInterval; }
 
 	getUpdateResultAfterEachCase() { return this.config.updateResultAfterEachCase; }
-	getUseExistingRunId() { return this.config.use_existing_run.id; }
+	getExistingRunId() { return this.config.use_existing_run.id; }
+	getCreatedRunId() { return this._createdRunId; }
 	getCreateNewRunIncludeAll() { return this.config.create_new_run.include_all; }
 	getCreateNewRunRunName() { return this.config.create_new_run.run_name; }
 
@@ -90,6 +97,7 @@ class ConfigManager
 	getStatusFixed() { return this.config.status.fixed; }
 
 	getStatus(key) { return this.config.status[key];}
+	getCreatedRunUrl(key) { return this._createdRunUrl;}
 	getCreateMissingCases() { return this.testRailConfigs.create_missing_cases; }
 }
 
