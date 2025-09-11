@@ -51,7 +51,39 @@ class ConfigManager {
 		}
 
 		this.testRailConfigs = merged;
-		this._createdRunId = null;
+
+		/**
+		 * Runtime state for a run created by this process.
+		 * @type {{ id: number|null, url: string|null } | null}
+		 */
+		this._activeRun = null;
+
+		if (this.testRailConfigs.use_existing_run.id !== 0) {
+			this.setRunId(this.testRailConfigs.use_existing_run.id);
+		}
+	}
+
+	/**
+	 * @param {{ id?: number|null, url?: string|null }} run
+	 */
+	setRun(run) {
+		if (!run || (run.id == null && run.url == null)) {
+			logger.warn('setRun called without id or url; ignoring.');
+			return;
+		}
+		const prev = this._activeRun ?? { id: null, url: null };
+		this._activeRun = {
+			id: run.id != null ? Number(run.id) : prev.id,
+			url: run.url != null ? String(run.url) : prev.url,
+		};
+	}
+
+	setRunUrl(url) {
+		this.setRun({ url });
+	}
+
+	setRunId(id) {
+		this.setRun({ id });
 	}
 
 	// generic getters
@@ -76,9 +108,13 @@ class ConfigManager {
 	get useExistingRun() { return this.testRailConfigs.use_existing_run; }
 	get createNewRun() { return this.testRailConfigs.create_new_run; }
 
-	// runtime state
-	setCreatedRunId(id) { this._createdRunId = id; }
-	getCreatedRunId() { return this._createdRunId; }
+	/**
+	 * @returns {{ id: number|null, url: string|null } | null}
+	 */
+	get activeRun() { return this._activeRun; }
+	get activeRunId() { return this._activeRun.id; }
+	get activeRunUrl() { return this._activeRun?.url ?? ""; }
+
 }
 
 let __instance;
