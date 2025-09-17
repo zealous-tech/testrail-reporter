@@ -48,7 +48,7 @@ class BaseClass {
     );
   }
 
-  addRunToTestRail = async (caseIds = []) => {
+  async addRunToTestRail(caseIds = []) {
     if (!Array.isArray(caseIds)) {
       throw new TypeError("addRunToTestRail expects an array of case IDs");
     }
@@ -83,12 +83,12 @@ class BaseClass {
       }
     }
 
-    this.config.setRun({ id: response.id, url: response.url })
+    this.config.setRun({ id: response.id, url: response.url });
     logger.info(`TestRail run created: ${response.url}`);
   };
 
   async updateTestRunIncludeAllField(fieldValue = false, casesId) {
-    logger.info(`Updating include_all field value to ${fieldValue}`);
+    logger.debug(`Updating include_all field value to ${fieldValue}`);
     const runId = await this.config.activeRunId;
     if (!runId) throw new Error("No active TestRail run id");
     await this.tr_api.updateRun(runId, {
@@ -377,12 +377,12 @@ class BaseClass {
     }
   }
 
+  /**
+   * The method is used to check if the test case is failed.
+   * It accepts the test case result object received from the test runner
+   * in 'onTestEnd' hook.
+   */
   isTestFailed(result) {
-    /*
-     * The method is used to check if the test case is failed.
-     * It accepts the test case result object received from the test runner
-     * in 'onTestEnd' hook.
-     * */
     return (
       result.status === "failed" ||
       result.status === "timedOut" ||
@@ -390,12 +390,12 @@ class BaseClass {
     );
   }
 
+  /**
+   * The method is used to check if the test case is failed by statusId.
+   * It accepts the status_id of the test case result
+   * received from the TestRail.
+   */
   isTestFailedByStatusId(statusId) {
-    /*
-     * The method is used to check if the test case is failed by statusId.
-     * It accepts the status_id of the test case result
-     * received from the TestRail.
-     * */
     return (
       statusId === this.config.getStatus('failed') ||
       statusId === this.config.getStatus('expFail')
@@ -417,13 +417,13 @@ class BaseClass {
     }
   }
 
+  /**
+   * If the test case ids are not found in the TestRail suite,
+   * or the test case ids are not provided,
+   * the reporter will not exit, but will inform the user about it.
+   * Returns true if the TestRail run needs to be created.
+   */
   needNewRun(case_ids, existingCaseIds, removedCaseIds) {
-    /*
-     * If the test case ids are not found in the TestRail suite,
-     * or the test case ids are not provided,
-     * the reporter will not exit, but will inform the user about it.
-     * Returns true if the TestRail run needs to be created.
-     * */
     if (removedCaseIds.length === case_ids.length || existingCaseIds.length === 0) {
       logger.warn(
         `The provided TestRail suite does not contain` +

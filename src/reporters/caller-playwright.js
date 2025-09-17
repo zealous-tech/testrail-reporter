@@ -42,9 +42,9 @@ let testQueue = [];
 // if the updateResultAfterEachCase is set to true.
 // This should be equal to the testResults array length once the test run ends.
 let updatedTestsAmount = 0;
-let executingTestCaseCount = new Array()
-let executedTestCaseCount = new Array()
-let casesWithoutIds = new Array()
+let executingTestCaseCount = new Array();
+let executedTestCaseCount = new Array();
+let casesWithoutIds = new Array();
 
 async function waitForBegin() {
   // wait for the onBegin hook to complete

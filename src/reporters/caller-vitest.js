@@ -20,6 +20,16 @@ class CallerVitest extends BaseClass {
     super();
   }
 
+  async waitForRun({ timeoutMs = 30000, intervalMs = 200 } = {}) {
+    const start = Date.now();
+    while (!(await this.config.activeRun)) {
+      if (Date.now() - start > timeoutMs) {
+        throw new Error(`Timed out after ${timeoutMs}ms waiting for TestRail run to be created`);
+      }
+      await setTimeout(intervalMs);
+    }
+  }
+
   onInit() {
     logger.debug("oniInit");
     logger.info("The reporter started successfully!");
@@ -34,8 +44,8 @@ class CallerVitest extends BaseClass {
 
     const getSuiteCaseIds = async () => {
       getCasesResponse = await this.tr_api
-        .getCases(this.config.projectId, {
-          suite_id: this.config.suiteId,
+        .getCases(await this.config.projectId, {
+          suite_id: await this.config.suiteId,
         })
         .catch((err) => {
           const configProjectId = this.config.projectId;
@@ -69,7 +79,13 @@ class CallerVitest extends BaseClass {
     files_count++;
     this.processStartList(file);
     if (files_count === paths_count) {
-      if (this.config.useExistingRun.id !== 0) {
+      if (await this.config.useExistingRun.id !== 0) {
+        // TODO: add catch block
+        let runId = await this.config.activeRunId;
+        logger.info(
+          `The Run started, utilizing an existing TestRail Run` +
+          ` with "${runId}" id.`);
+      } else {
         await getSuiteCaseIds();
         logger.debug("suiteCaseIds: ", suiteCaseIds);
         removedCaseIds = case_ids.filter(
@@ -94,8 +110,8 @@ class CallerVitest extends BaseClass {
             await this.getCasesIdsFromRun()
           )
       }
-      if (this.config.updateInterval !== 0) {
-        this.startScheduler();
+      if (await this.config.updateInterval !== 0) {
+        await this.startScheduler();
       }
       const createdNewTestCasesIds = await this.addMissingCasesToTestSuite();
       await this.addMissingCasesToRun
@@ -143,7 +159,9 @@ class CallerVitest extends BaseClass {
 
   async onFinished(packs) {
     logger.debug("onFinished");
-    if (this.config.updateInterval === 0) {
+    if (await this.config.updateInterval === 0) {
+      // Ensure a run exists (created in onCollected) before pushing results
+      await this.waitForRun();
       await this.updateTestRailResults(testResults);
     }
     global.need_to_stop = true;

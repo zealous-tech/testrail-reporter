@@ -1,5 +1,5 @@
 const log4js = require("log4js");
-const logLevel = process.env.LOG_LEVEL ?? "info";
+const logLevel = process.env.LOG_LEVEL ?? "all";
 
 log4js.configure({
   appenders: {
