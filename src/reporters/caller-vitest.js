@@ -43,22 +43,8 @@ class CallerVitest extends BaseClass {
   async onCollected(file) {
 
     const getSuiteCaseIds = async () => {
-      getCasesResponse = await this.tr_api
-        .getCases(await this.config.projectId, {
-          suite_id: await this.config.suiteId,
-        })
-        .catch((err) => {
-          const configProjectId = this.config.projectId;
-          const configSuiteId = this.config.suiteId;
-          logger.error(
-            `Failed to get test cases from project by` +
-            `" ${configProjectId}" id` +
-            ` and suite by "${configSuiteId}" id.` +
-            ` \nPlease check your TestRail configuration.`,
-          );
-          logger.error(err);
-          process.exit(1);
-        });
+      getCasesResponse = await this.getAllCasesFromTestRail()
+        
       for (let val of getCasesResponse) {
         suiteCaseIds.push(val.id);
       }

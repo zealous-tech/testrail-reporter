@@ -107,23 +107,8 @@ class CallerPlaywright extends BaseClass {
        * Get the test cases from the TestRail suite.
        * If the test cases are not found, the reporter will exit.
        * */
-      let getCasesResponse = await self.tr_api
-        .getCases(self.config.projectId, {
-          suite_id: self.config.suiteId,
-        })
-        .catch((err) => {
-          const configProjectId = self.config.projectId;
-          const configSuiteId = self.config.suiteId;
-          logger.error(
-            `Failed to get test cases from project by` +
-            ` "${configProjectId}" id` +
-            ` and suite by "${configSuiteId}" id.` +
-            ` \nPlease check your TestRail configuration.`,
-          );
-          logger.error(err);
-          // TODO: reffer to the base.js needToCreateRun variable
-          process.exit(1);
-        });
+      let getCasesResponse = await self.getAllCasesFromTestRail()
+
       for (let val of getCasesResponse) {
         const testCaseId = val.id;
         trCaseIds.push(testCaseId);
@@ -194,11 +179,7 @@ class CallerPlaywright extends BaseClass {
       );
 
     if (this.needToCreateRun) {
-      let getTestsResponse = await this.tr_api.getTests(await this.config.activeRunId)
-      .catch((err) => {
-        logger.error(err.message);
-        throw err;
-      });
+      let getTestsResponse = await this.getTestsFromRun()
       testrailRunCaseIds = getTestsResponse.map((val) => val.case_id);
       commonIds = testrailRunCaseIds.filter((id) =>
         existingCaseIds.includes(id),
@@ -249,12 +230,7 @@ class CallerPlaywright extends BaseClass {
     async function uploadAttachments(self, runTestId) {
       for (const attachment of getCaseAttachments()) {
         try {
-          logger.info(`Uploading "${attachment}" attachment.`);
-          const payload = {
-            name: path.basename(attachment),
-            value: fs.createReadStream(attachment),
-          };
-          await self.tr_api.addAttachmentToResult(runTestId, payload);
+          await self.uploadAttachmentsToTestRail(runTestId, attachment)
         } catch (error) {
           logger.warn(`Error uploading attachment: ${error.message}`);
         }
@@ -263,14 +239,7 @@ class CallerPlaywright extends BaseClass {
 
     async function updateRunIfNeeded(self, data) {
       if (!self.config.updateAfterEach) return;
-
-      // Push results to TestRail
-      let apiRes = await self.tr_api
-        .addResultsForCases(await this.config.activeRunId, { results: data })
-        .catch(err => {
-          logger.error("Failed to add test results:", err);
-          return [];
-        });
+      let apiRes = await self.updateTestResult(data)
 
       // Normalize to an array (handles both plain-array and { results: [...] } shapes)
       const resultsArray = Array.isArray(apiRes)

@@ -47,6 +47,63 @@ class BaseClass {
       this.config.addMissingCasesToRun
     );
   }
+  
+  async getAllCasesFromTestRail() 
+  {
+    /*
+     * Get the test cases from the TestRail suite.
+     * If the test cases are not found, the reporter will exit. 
+     */
+    return await this.tr_api
+      .getCases(this.config.projectId, {
+        suite_id: this.config.suiteId,
+      })
+      .catch((err) => {
+        const configProjectId = this.config.projectId;
+        const configSuiteId = this.config.suiteId;
+        logger.error(
+          `Failed to get test cases from project by` +
+          ` "${configProjectId}" id` +
+          ` and suite by "${configSuiteId}" id.` +
+          ` \nPlease check your TestRail configuration.`,
+        );
+        logger.error(err);
+        process.exit(1);
+      });
+  }
+
+  async getTestsFromRun() {
+    /*
+     * Get the test cases from the TestRail run.
+     * If the test cases are not found, the reporter will exit.
+     */
+  
+    return await this.tr_api.getTests(await this.config.activeRunId)
+      .catch((err) => {
+        logger.error(err.message);
+        throw err;
+      });
+  }     
+
+  async updateTestResult(data)
+  {
+    return await this.tr_api
+      .addResultsForCases(await this.config.activeRunId, { results: data })
+      .catch(err => {
+        logger.error("Failed to add test results:", err);
+        return [];
+      });
+  }
+
+  async uploadAttachmentsToTestRail(runTestId, attachment) {
+
+    logger.info(`Uploading "${attachment}" attachment.`);
+    const payload = {
+      name: path.basename(attachment),
+      value: fs.createReadStream(attachment),
+    };
+    await this.tr_api.addAttachmentToResult(runTestId, payload);
+  }
 
   async addRunToTestRail(caseIds = []) {
     if (!Array.isArray(caseIds)) {
