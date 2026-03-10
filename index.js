@@ -7,24 +7,24 @@ class VitestTestrailReporter {
     this.caller = new CallerVitest();
   }
 
-  onInit() {
-    this.caller.onInit();
+  async onInit() 
+  {
+    await this.caller.onInit();
   }
 
-  onPathsCollected(paths) {
-    this.caller.onPathsCollected(paths);
+  async onTestSuiteReady (testSuite) 
+  {
+    await this.caller.onTestSuiteReady(testSuite);  
   }
 
-  onCollected(file) {
-    this.caller.onCollected(file);
-  }
+  async onTestCaseResult(testCase)
+  {   
+    await this.caller.onTestCaseResult(testCase);
+  }  
 
-  onTaskUpdate(packs) {
-    this.caller.onTaskUpdate(packs);
-  }
-
-  onFinished(packs) {
-    this.caller.onFinished(packs);
+  async onTestRunEnd(testModules, unhandledErrors, reason)
+  {
+    await this.caller.onTestRunEnd(testModules, unhandledErrors, reason);
   }
 }
 

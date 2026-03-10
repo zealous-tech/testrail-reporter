@@ -44,7 +44,7 @@
     "log4js": "^6.9.1",
     "node-schedule": "^2.1.1",
     "playwright": "^1.40.1",
-    "vitest": "^3.0.5"
+    "vitest": "^3.2.4"
   },
   "devDependencies": {
     "@types/node": "^20.12.11",

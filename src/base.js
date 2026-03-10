@@ -2,10 +2,12 @@ const TestRail = require("@dlenroc/testrail");
 const schedule = require("node-schedule");
 const fs = require("fs");
 const path = require("path");
+
 const Utils = require("./utils");
 const getLogger = require("./logger");
 const logger = getLogger();
 const constants = require("./constants/constants");
+
 const filePaths = require("./constants/filePaths");
 const { getConfigManager } = require("./managers/configManager");
 
@@ -273,7 +275,7 @@ class BaseClass {
     // Only iterate as far as both lists overlap
     const count = Math.min(resultsArray.length, localResults.length);
     for (let i = 0; i < count; i++) {
-      const attachments = localResults[i].attachments;
+      const attachments = localResults[i].attachments || [];
       const resultId = resultsArray[i].id;
       if (!resultId) {
         logger.warn(`No TestRail result id at index ${i}, skipping attachments`);
