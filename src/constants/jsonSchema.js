@@ -1,5 +1,10 @@
 const Joi = require('joi')
 
+
+const isPlaywright =
+  process?.env?.npm_lifecycle_script?.includes("playwright");
+
+
 const TEST_RAIL_CONFIG_SCHEMA = Joi.object
 	({
 		base_url: Joi.string()
@@ -14,8 +19,10 @@ const TEST_RAIL_CONFIG_SCHEMA = Joi.object
 		create_missing_cases: Joi.boolean().required(),
 		add_missing_cases_to_run: Joi.boolean().required(),
 		testRailUpdateInterval: Joi.number().integer().min(0).required(),
-
-		updateResultAfterEachCase: Joi.boolean().required(),
+		
+		updateResultAfterEachCase: isPlaywright
+			? Joi.boolean().required()
+			: Joi.boolean().optional(),
 
 		use_existing_run: Joi.object
 			({
