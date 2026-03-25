@@ -164,7 +164,7 @@ Here is a quick GIF demonstrating how to configure your project.
 
 ## Usage
 
-To generate a report with [Vitest](https://vitest.dev/) or [Playwright](https://playwright.dev/) and upload it to [TestRail](https://www.testrail.com/), follow these steps:
+To generate a report with [Vitest](https://vitest.dev/), [Jest](https://jestjs.io/docs/getting-started) or [Playwright](https://playwright.dev/) and upload it to [TestRail](https://www.testrail.com/), follow these steps:
 
 
 <details>
@@ -384,6 +384,63 @@ vitest run
 
 ---
 
+<details>
+    <summary><b>Click to see Jest usage</b></summary>
+    
+##### Add reporter to the config file
+   
+Open your Jest config file (e.g., jest.config.js or jest.config.ts) and add '@zealteam/testrail-reporter' to the reporters array.
+
+```javascript
+    teardownTimeout: 200000,
+    reporters: ['default','@zealteamtestrail-reporter']
+    
+```
+Update test case with TestRail ID
+
+Write your tests using Jest, ensuring that each test includes appropriate assertions and result statuses.
+    
+You should include the TestRail test case IDs in the test names to link them to corresponding cases. For example:
+
+```javascript
+test('@C123 adds 1 + 2 to equal 3', () => {
+    expect(1 + 2).toBe(3);
+});
+```
+
+In the example above, @C123 represents the TestRail test case ID.
+Replace @C123 with the actual test ID from TestRail.
+
+For more details about the provider installation visit <a href="https://jestjs.io/docs/getting-started" target="_blank">Jest documentation</a>.
+
+Jest provider configuration is available in <a href="https://jestjs.io/docs/configuration" target="_blank">Jest documentation</a>.
+
+
+
+##### Run your tests
+```code
+npx jest
+```
+
+or
+
+```code
+npm run test:unit
+```
+by default above command comes with the following script configuration in the package.json file,
+```code
+"scripts": {
+...
+"test:unit": "vitest"
+...
+},
+```
+...
+
+</details>
+
+---
+
 
 ## Reporter Workflow
 
@@ -436,6 +493,14 @@ To test the reporter, you can use the following steps:
 5. set log level in src/logger.js file to `debug` for more detailed logs
 6. run the tests using the appropriate script from the `package.json` file. For example `npm run e2eSmokeTests` or add your custom command
 
+##### Jest testing
+
+1. navigate to the `jest` folder
+2. run `npm install` to install the dependencies
+3. set your testrail configurations in the `testrail.config.js` file
+4. update the `jest.config.ts` file if needed
+5. set log level in src/logger.js file to `debug` for more detailed logs
+6. run the tests using the appropriate script from the `package.json` file. For example `npm run test` or add your custom command
 
 ## License
 
