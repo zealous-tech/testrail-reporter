@@ -10,13 +10,13 @@
 
 # About Zealous™
 > **Zealous™** is a technology-driven company delivering scalable, innovative and future-ready digital solutions.
-> We specialize in building high-quality products powered by engineering excellence, data-driven insights and emerging technologies.
+> We specialize in building high-quality products powered by engineering excellence, data-driven insights and emerging technologies.\
 > 🌐 **Website:** [zealous.tech](https://zealous.tech)
 
 # TestRail Reporter for all popular JS | TS based testing frameworks
 
 
-**The TestRail reporter package currently supports [Vitest](https://vitest.dev/), [Playwright](https://playwright.dev/) test frameworks. The support for [Jest](https://jestjs.io/) and other runners currently in the development process.**
+**The TestRail reporter package currently supports [Vitest](https://vitest.dev/), [Playwright](https://playwright.dev/) and [Jest](https://jestjs.io/) test frameworks. The support for other runners currently in the development process.**
 
 The package allows you to synchronize auto test results with associated [TestRail](https://www.testrail.com/) tests through simple configuration.
 
