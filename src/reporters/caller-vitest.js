@@ -128,7 +128,7 @@ class CallerVitest extends BaseClass
       const status_id = this.config.getStatus(status);
       const comment = status === 'failed'
             ? `#Error message:#\n ${JSON.stringify(
-              tesCaseResult.errors[1].message,
+              tesCaseResult?.errors[0]?.message,
               null,
               "\t",
             )}\n`
