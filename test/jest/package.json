@@ -1,0 +1,17 @@
+{
+  "name": "jest",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "npx jest --config jest.config.ts -t 'test title'"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0"
+  }
+}

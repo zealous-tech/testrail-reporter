@@ -1,5 +1,6 @@
 const CallerVitest = require("./src/reporters/caller-vitest");
 const CallerPlaywright = require("./src/reporters/caller-playwright");
+const CallerJest = require("./src/reporters/caller-jest");
 const process = require("process");
 
 class VitestTestrailReporter {
@@ -51,13 +52,25 @@ class PlaywrightTestRailReporter {
 }
 
 class JestTestRailReporter {
-  onRunStart() {}
 
-  onTestStart() {}
+  constructor(globalConfig, reporterOptions, reporterContext) 
+  {
+    this._caller = new CallerJest();
+    this._globalConfig = globalConfig;
+    this._options = reporterOptions;
+    this._context = reporterContext;
+  }
+  
+  async onTestCaseResult(test, testCaseResult) 
+  {
+    await this._caller.onTestCaseResult(test, testCaseResult);
+  }
+    
+  async onRunComplete (testContexts, results) 
+  {
 
-  onTestResult() {}
-
-  onRunComplete() {}
+    await this._caller.onRunComplete(testContexts, results);
+  }
 }
 
 if (process && process.env && process.env.npm_lifecycle_script) {
