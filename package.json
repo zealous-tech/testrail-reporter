@@ -40,6 +40,7 @@
   "dependencies": {
     "@dlenroc/testrail": "^1.9.1",
     "@playwright/test": "^1.40.1",
+    "joi": "^18.0.0",
     "log4js": "^6.9.1",
     "node-schedule": "^2.1.1",
     "playwright": "^1.40.1",

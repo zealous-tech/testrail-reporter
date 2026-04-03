@@ -1,17 +1,15 @@
-const Utils = require("../utils.js");
 const { setTimeout } = require("timers/promises");
 const BaseClass = require("../base").BaseClass;
 const testResults = require("../base").testResults;
 const case_ids = require("../base").case_ids;
-const getLogger = require("../logger.js");
+const getLogger = require("../logger");
 const logger = getLogger();
+const constants = require("../constants");
 
 const startList = {};
 global.need_to_stop = false;
 let files_count = 0;
 let paths_count = 0;
-let runId = 0;
-let createRunResponse;
 let removedCaseIds = [];
 let existingCaseIds = [];
 let suiteCaseIds = [];
@@ -20,7 +18,16 @@ let getCasesResponse;
 class CallerVitest extends BaseClass {
   constructor() {
     super();
-    this.utils = new Utils();
+  }
+
+  async waitForRun({ timeoutMs = 30000, intervalMs = 200 } = {}) {
+    const start = Date.now();
+    while (!(await this.config.activeRun)) {
+      if (Date.now() - start > timeoutMs) {
+        throw new Error(`Timed out after ${timeoutMs}ms waiting for TestRail run to be created`);
+      }
+      await setTimeout(intervalMs);
+    }
   }
 
   onInit() {
@@ -34,40 +41,10 @@ class CallerVitest extends BaseClass {
   }
 
   async onCollected(file) {
-    const setRunId = async () => {
-      runId = this.testrailConfigs.use_existing_run.id;
-      await this.tr_api
-        .getRun(runId)
-        .then(() => {
-          logger.info("The runId is a valid test run id!!");
-        })
-        .catch((error) => {
-          logger.error(error.message);
-          throw error.message;
-        });
-      logger.info(
-        `The Run started, utilizing an existing TestRail Run` +
-          `with "${runId}" id.`
-      );
-    };
 
     const getSuiteCaseIds = async () => {
-      getCasesResponse = await this.tr_api
-        .getCases(this.testrailConfigs.project_id, {
-          suite_id: this.testrailConfigs.suite_id,
-        })
-        .catch((err) => {
-          const configProjectId = this.testrailConfigs.project_id;
-          const configSuiteId = this.testrailConfigs.suite_id;
-          logger.error(
-            `Failed to get test cases from project by` +
-              `" ${configProjectId}" id` +
-              ` and suite by "${configSuiteId}" id.` +
-              ` \nPlease check your TestRail configuration.`,
-          );
-          logger.error(err);
-          process.exit(1);
-        });
+      getCasesResponse = await this.getAllCasesFromTestRail()
+        
       for (let val of getCasesResponse) {
         suiteCaseIds.push(val.id);
       }
@@ -78,23 +55,9 @@ class CallerVitest extends BaseClass {
         if (this.needToCreateRun) {
           logger.warn(
             `The provided TestRail suite does not contain` +
-              ` the following case ids: [${removedCaseIds}]`,
+            ` the following case ids: [${removedCaseIds}]`,
           );
         }
-      }
-    };
-
-    const addRunToTestRail = async () => {
-      if (this.needToCreateRun) {
-        createRunResponse = await this.addRunToTestRail(existingCaseIds).catch(
-          (err) => {
-            logger.error(err.message);
-            throw err.message;
-          }
-        );
-        runId = createRunResponse.id;
-        this.runURL = createRunResponse.url;
-        this.logRunURL();
       }
     };
 
@@ -102,9 +65,12 @@ class CallerVitest extends BaseClass {
     files_count++;
     this.processStartList(file);
     if (files_count === paths_count) {
-      await this.addMissingCasesToTestSuite();
-      if (this.testrailConfigs.use_existing_run.id !== 0) {
-        await setRunId();
+      if (await this.config.useExistingRun.id !== 0) {
+        // TODO: add catch block
+        let runId = await this.config.activeRunId;
+        logger.info(
+          `The Run started, utilizing an existing TestRail Run` +
+          ` with "${runId}" id.`);
       } else {
         await getSuiteCaseIds();
         logger.debug("suiteCaseIds: ", suiteCaseIds);
@@ -123,15 +89,25 @@ class CallerVitest extends BaseClass {
           removedCaseIds,
         );
         informAboutMissingCases();
-        await addRunToTestRail();
+        await this.addRunToTestRail(existingCaseIds);
+        await this.updateTestRunIncludeAllField
+          (
+            false,
+            await this.getCasesIdsFromRun()
+          )
       }
-      if (this.testrailConfigs.testRailUpdateInterval !== 0) {
-        this.startScheduler(runId);
+      if (await this.config.updateInterval !== 0) {
+        await this.startScheduler();
       }
+      const createdNewTestCasesIds = await this.addMissingCasesToTestSuite();
+      await this.addMissingCasesToRun
+        (
+          [...case_ids, ...createdNewTestCasesIds]
+        );
     }
   }
 
-  onTaskUpdate(packs) {
+  async onTaskUpdate(packs) {
     logger.debug("onTaskUpdate");
     packs.forEach((element) => {
       const testRunId = element[0];
@@ -139,29 +115,28 @@ class CallerVitest extends BaseClass {
       if (case_id && element[1].duration >= 0) {
         if (element[1].state === "pass") element[1].state = "passed";
         if (element[1].state === "fail") element[1].state = "failed";
-        const status_id = this.testrailConfigs.status[element[1].state];
+        const status_id = this.config.getStatus(element[1].state);
         const comment =
-          status_id === this.testrailConfigs.status.failed
+          status_id === this.config.getStatus('failed')
             ? `#Error message:#\n ${JSON.stringify(
-                element[1].errors[0].message,
-                null,
-                "\t",
-              )}\n`
+              element[1].errors[0].message,
+              null,
+              "\t",
+            )}\n`
             : "PASS";
 
-        case_id.forEach((item) => 
-        {
-            const data = 
-            {
-              case_id: item,
-              status_id,
-              comment,
-              elapsed: this.utils._formatTime(element[1].duration) || "",
-              defects: "",
-              version: "",
-              // add screenshot as attachment
-              attachments: [element[2].failScreenshotPath] || [],
-            };
+        case_id.forEach((item) => {
+          const data =
+          {
+            case_id: item,
+            status_id,
+            comment,
+            elapsed: this.utils._formatTime(element[1].duration) || "",
+            defects: "",
+            version: "",
+            // add screenshot as attachment
+            attachments: [element[2].failScreenshotPath] || [],
+          };
           testResults.push(data);
         })
       }
@@ -170,11 +145,10 @@ class CallerVitest extends BaseClass {
 
   async onFinished(packs) {
     logger.debug("onFinished");
-    if (this.testrailConfigs.testRailUpdateInterval === 0) {
-      while (runId === 0) {
-        await setTimeout(100);
-      }
-      await this.updateTestRailResults(testResults, runId);
+    if (await this.config.updateInterval === 0) {
+      // Ensure a run exists (created in onCollected) before pushing results
+      await this.waitForRun();
+      await this.updateTestRailResults(testResults);
     }
     global.need_to_stop = true;
     this.logRunURL();
@@ -182,17 +156,17 @@ class CallerVitest extends BaseClass {
 
   processStartList(arr) {
     for (const element of arr) {
-      if (!element.name.match(/[@C][?\d]{1,8}$/gm) && element.tasks) {
+      if (!element.name.match(constants.CASE_ID_REGEX) && element.tasks) {
         this.processStartList(element.tasks);
-      } else {
+      }
+      else {
         const case_id = this.utils._extractCaseIdsFromTitle(element.name);
-        if (case_id != null) 
-        {
-          case_id.forEach((item) => 
-          {             
-            case_ids.push(item) 
+        if (case_id != null || case_id.length > 1) {
+          case_id.forEach((item) => {
+            case_ids.push(item)
           })
-        } else if (self.testrailConfigs.create_missing_cases) {
+        }
+        if (this.config.createMissingCases) {
           this.missingCasesTitles.push(element.name);
         }
         if (element.mode === "skip") {
@@ -201,7 +175,7 @@ class CallerVitest extends BaseClass {
           }
           const data = {
             case_id: case_id ? +case_id[1] : 0,
-            status_id: this.testrailConfigs.status.skipped,
+            status_id: this.config.getStatus('skipped'),
             comment: "This test was marked as 'Skipped'.",
             elapsed: "",
             defects: "",
