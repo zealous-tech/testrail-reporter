@@ -11,6 +11,6 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "vitest": "^2.1.4"
+    "vitest": "^3.1.4"
   }
 }
