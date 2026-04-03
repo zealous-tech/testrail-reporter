@@ -6,6 +6,12 @@
 [![Playwright](https://img.shields.io/badge/Playwright-1.41.2-blue)](https://playwright.dev/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6-yellow)](https://www.javascript.com/)
 
+> This tool was developed by **Zealous™**
+
+# About Zealous™
+> **Zealous™** is a technology-driven company delivering scalable, innovative and future-ready digital solutions.
+> We specialize in building high-quality products powered by engineering excellence, data-driven insights and emerging technologies.
+> 🌐 **Website:** [zealous.tech](https://zealous.tech)
 
 # TestRail Reporter for all popular JS | TS based testing frameworks
 
