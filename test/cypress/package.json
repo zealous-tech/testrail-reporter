@@ -1,0 +1,19 @@
+{
+  "name": "cypress",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx cypress run --spec '**/example_tests.cy.ts'"
+  },
+  "dependencies": {
+    "cypress": "^15.13.1"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "cypress-multi-reporters": "^2.0.5"
+  }
+}

@@ -112,7 +112,7 @@ class JestCaller extends BaseClass
             }
         })    
 
-        if (this.config.createMissingCases) 
+        if (this.config.createMissingCases && case_ids_from_title.length === 0) 
         {
             this.missingCasesTitles.push(testCaseResult.title);
         }
