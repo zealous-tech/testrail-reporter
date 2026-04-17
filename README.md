@@ -569,7 +569,7 @@ Differences between testrail-reporter and TestRail CLI (The TestRail CLI is a co
 | Updating Existing Run                                  | Supported                           | Supported     |
 | Attaching Screenshots or Logs                          | Supported                           | Supported     |
 | Adding New Case to Test Suite                          | Supported                           | Supported     |
-| Adding New Case to Existing Test Run                   | Support is Currently in Development | Supported     |
+| Adding New Case to Existing Test Run                   | Supported                           | Supported     |
 
 ## Self testing
 
