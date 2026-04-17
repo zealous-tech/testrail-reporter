@@ -16,7 +16,7 @@
 # TestRail Reporter for all popular JS | TS based testing frameworks
 
 
-**The TestRail reporter package currently supports [Vitest](https://vitest.dev/), [Playwright](https://playwright.dev/) and [Jest](https://jestjs.io/) test frameworks. The support for other runners currently in the development process.**
+**The TestRail reporter package currently supports [Vitest](https://vitest.dev/),     [Playwright](https://playwright.dev/),  [Cypress](https://www.cypress.io/#create), [Mocha](https://mochajs.org/getting-started/) and [Jest](https://jestjs.io/) test frameworks. The support for other runners currently in the development process.**
 
 The package allows you to synchronize auto test results with associated [TestRail](https://www.testrail.com/) tests through simple configuration.
 
@@ -37,8 +37,8 @@ The package allows you to synchronize auto test results with associated [TestRai
 
 The reporter supports the following features
 
-- Supports Vitest, Playwright testing frameworks.
-- Associate Vitest, Playwright tests with TestRail tests.
+- Supports Vitest, Jest, Cypress, Mocha, Playwright testing frameworks.
+- Associate Vitest, Jest, Cypress, Mocha, Playwright tests with TestRail tests.
 - Generate a run in TestRail using specified test cases or all available test cases. Alternatively, the reporter can connect to and utilize an already created test run (manually initiated through the TestRail graphical user interface).
 - Update the test run results in TestRail either after running all test cases or simultaneously.
 - You have an option to update the test results of the same test run which executed several times, by saving all history data. Or you can create a new test run for every execution.
@@ -170,7 +170,7 @@ Here is a quick GIF demonstrating how to configure your project.
 
 ## Usage
 
-To generate a report with [Vitest](https://vitest.dev/), [Jest](https://jestjs.io/docs/getting-started) or [Playwright](https://playwright.dev/) and upload it to [TestRail](https://www.testrail.com/), follow these steps:
+To generate a report with [Vitest](https://vitest.dev/), [Jest](https://jestjs.io/docs/getting-started), [Cypress](https://www.cypress.io/#create), [Mocha](https://mochajs.org/getting-started/), or [Playwright](https://playwright.dev/) and upload it to [TestRail](https://www.testrail.com/), follow these steps:
 
 
 <details>
@@ -448,6 +448,105 @@ by default above command comes with the following script configuration in the pa
 ---
 
 
+<details>
+    <summary><b>Click to see Mocha usage</b></summary>
+    
+##### Add reporter to the config file
+   
+Open your Mocha config file (e.g., .mocharc.js or .mocharc.json) and add '@zealteam/testrail-reporter' as the reporter or install mocha-multi-reporters plugin for mocha if you want use multiple reporter.
+
+```javascript
+module.exports = {
+    reporter: '@zealteam/testrail-reporter'
+}
+```
+
+You can also run it directly using CLI:
+
+```bash
+npx mocha --reporter @zealteam/testrail-reporter
+```
+
+##### Update test case with TestRail ID
+
+Write your tests using Mocha, ensuring that each test includes appropriate assertions and result statuses.
+
+You should include the TestRail test case IDs in the test names to link them to corresponding cases. For example:
+
+```javascript
+describe('Math operations', () => {
+    it('@C123 adds 1 + 2 to equal 3', () => {
+        if (1 + 2 !== 3) throw new Error('Assertion failed');
+    });
+});
+```
+
+In the above example, `@C123` represents the TestRail test case ID. Replace it with the actual ID from TestRail.
+
+##### Run your tests
+
+```bash
+npx mocha
+```
+
+or
+
+```bash
+npm test
+```
+
+</details>
+
+---
+
+<details>
+    <summary><b>Click to see Cypress usage</b></summary>
+    
+##### Add reporter to the config file
+   
+Open your Cypress config file (e.g., cypress.config.js or cypress.config.ts) and add '@zealteam/testrail-reporter' as the reporter or, if you want to use multiple reporters, use the `cypress-multi-reporters` plugin and then specify the reporters in the configuration file..
+
+```javascript
+const { defineConfig } = require('cypress');
+
+module.exports = defineConfig({
+    reporter: '@zealteam/testrail-reporter'
+});
+```
+
+##### Update test case with TestRail ID
+
+Write your tests using Cypress, ensuring that each test includes appropriate assertions and result statuses.
+
+You should include the TestRail test case IDs in the test names to link them to corresponding cases. For example:
+
+```javascript
+describe('Calculator', () => {
+    it('@C123 adds 1 + 2 to equal 3', () => {
+        expect(1 + 2).to.equal(3);
+    });
+});
+```
+
+In the above example, `@C123` represents the TestRail test case ID. Replace it with the actual ID from TestRail.
+
+##### Run your tests
+
+```bash
+npx cypress run
+```
+
+or
+
+```bash
+npm run cypress
+```
+
+</details>
+
+---
+
+
 ## Reporter Workflow
 
 ![alt text](https://zealous-tech.github.io/testrail-reporter/workflow.png)
@@ -507,6 +606,27 @@ To test the reporter, you can use the following steps:
 4. update the `jest.config.ts` file if needed
 5. set log level in src/logger.js file to `debug` for more detailed logs
 6. run the tests using the appropriate script from the `package.json` file. For example `npm run test` or add your custom command
+
+##### Mocha testing
+
+1. Navigate to the `mocha` folder  
+2. Run `npm install` to install the dependencies  
+3. Set your TestRail configurations in the `testrail.config.js` file  
+4. Update the `.mocharc.js` or `.mocharc.json` file if needed  
+5. Set log level in `src/logger.js` file to `debug` for more detailed logs  
+6. Run the tests using the appropriate script from the `package.json` file, for example `npm run test` or `npx mocha`
+
+---
+
+##### Cypress testing
+
+1. Navigate to the `cypress` folder  
+2. Run `npm install` to install the dependencies  
+3. Set your TestRail configurations in the `testrail.config.js` file  
+4. Update the `cypress.config.js` or `cypress.config.ts` file if needed  
+5. Set log level in `src/logger.js` file to `debug` for more detailed logs  
+6. Run the tests using the appropriate script from the `package.json` file, for example `npm run cypress` or `npx cypress run`
+
 
 ## License
 

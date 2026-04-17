@@ -1,0 +1,21 @@
+{
+  "name": "mocha",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": ".mocharc.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "npx mocha --reporter mocha-multi-reporters --reporter-options configFile=mocha-reporter-config.json"
+  },
+  "devDependencies": {
+    "mocha": "^11.7.5",
+    "mocha-junit-reporter": "^2.2.1",
+    "mocha-multi": "^1.1.7",
+    "mocha-multi-reporters": "^1.5.1"
+  }
+}
